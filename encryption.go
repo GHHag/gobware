@@ -4,14 +4,24 @@ import(
 	"fmt"
 )
 
-func Encrypt(token *Token){
-	fmt.Println("\n%s", &token.Secret)
+type IAlgorithm Interface {
+	secret string
+	algorithm func
 }
 
-func Decrypt(token *Token)(bool){
+type HMAC256 implements IAlgorithm{} 
+type SHA256 implements IAlgorithm{} 
+
+func Encrypt(token *Token)(*Token){
 	fmt.Println("\n%s", &token.Secret)
 
-	return false
+	return &token
+}
+
+func Decrypt(token *Token)(*Token){
+	fmt.Println("\n%s", &token.Secret)
+
+	return &token
 }
 
 func bautaEncryption(){
