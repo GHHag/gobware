@@ -1,5 +1,19 @@
 # gobware
 
+-Generera token - kryptera userId och expires med SECRET sträng
+-Skicka token till client via "Bearer" http headern
+-Skicka med i följande requests till servern
+-Decoda, validera/verifiera genom att köra token och request genom "SecurityChain"
+-Skicka svar samt token tillbaka till client
+
+Abstractions/interfaces:
+-Configuration.SecurityChain - ska kunna customizas efter behov, funktioner som kedjan kör ska enkelt kunna läggas till.
+-Data - datan som sparas och encodas i ett token ska kunna variera, men med krav på att vissa fält ska finnas.
+-Kryptering - olika algoritmer för kryptering men som tar emot samma format input och ger samma format på output.
+-Format på requests och responses - ska requests och responses behöva vara från net/http package eller kan de ha en högre abstraheringsgrad så att användare kan använda andra packages för requests och responses? Definiera interface för metoder/data som krävs. 
+
+--------------------------------
+
 Session Cookie based approach:
 
 1. Server generates a "sessionId" (signs it using "secret key"), and 
