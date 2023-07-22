@@ -4,27 +4,27 @@ import(
 )
 
 type TokenAlgorithm interface {
-	Algorithm(token *Token)
-	Encrypt(token *Token)
-	Decrypt(token *Token)
+	Algorithm(*Token, bool)(*Token)
+	Encrypt(*Token)(*Token)
+	Decrypt(*Token)(*Token)
 }
 
 type KekwAlgorithm struct {
-	
+	//Algorithm func(*Token)(*Token)
+	//Encrypt func(*Token)
+	//Decrypt func(*Token)
 }
 
 type BautaAlgorithm struct {
-
+	Algorithm func(*Token)
+	Encrypt func(*Token)
+	Decrypt func(*Token)
 }
 
 func (algo KekwAlgorithm) Algorithm(token *Token, encrypt bool)(*Token){
-	if encrypt {
-		token.Encoded = true
-		return token
-	} else{
-		token.Encoded = false
-		return token
-	}
+	token.Encoded = true
+
+	return token
 }
 
 func (algo KekwAlgorithm) Encrypt(token *Token)(*Token){
