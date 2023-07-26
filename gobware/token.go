@@ -30,6 +30,10 @@ func CreateToken(secret string, userId string, data map[string]interface{}, algo
 	return token
 }
 
+func(Token) Encode(salt string)(string){
+	return "MOCK ENCODED JSON TOKEN OBJECT"
+}
+
 func CheckExpiration(token Token)(bool){
 	return token.Expires - time.Now().Unix() < 0
 }

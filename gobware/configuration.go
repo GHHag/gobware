@@ -4,7 +4,7 @@ import(
 	"net/http"
 )
 
-type Link func(*Token, *http.Request) (bool)
+type Link func(*Token)(bool)
 
 type Configuration struct {
 	SecurityChain []Link
@@ -15,8 +15,12 @@ type Configuration struct {
 	append(config.SecurityChain, link)
 }*/
 
-func (config Configuration) RunChain(token *Token, w http.ResponseWriter, r *http.Request){
+func(config Configuration) RunChain(token *Token, w http.ResponseWriter, r *http.Request){
 	for _, link := range config.SecurityChain {
-		link(token, r)
+		link(token)
 	}
+}
+
+func CheckToken(*Token, *http.Request)(bool){
+	return true
 }
