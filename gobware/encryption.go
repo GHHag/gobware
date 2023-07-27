@@ -22,7 +22,7 @@ type BautaAlgorithm struct {
 }
 
 func (algo KekwAlgorithm) Algorithm(token *Token, encrypt bool)(*Token){
-	token.Encoded = true
+	//token.Encoded = true
 
 	return token
 }

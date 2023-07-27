@@ -1,30 +1,33 @@
 package main
 
 import(
-	"fmt"
 	"net/http"
 	//"encoding/json"
+	"fmt"
+	"time"
 	"github.com/GHHag/gobware.git/gobware"
 )
 
 // "ENV" VARIABLES
 var secret string = "SECRET"
 var salt string = "SALT"
+var tokenName string = "auth"
+var expirationTime time.Duration = time.Hour
 
-func main(){
-	// CONFIGURATION/SECURITY CHAIN
+func createSecurityChain(){
 	//securityConfig := gobware.Configuration{}
 	//append(securityConfig.SecurityChain, gobware.CheckToken)
+}
 
-	//fmt.Println(gobware.CheckExpiration(token))
-	//fmt.Println(token.Encoded)
-	//fmt.Println(token.Data)
-
-	http.HandleFunc("/test", test)	
+func main(){
+	// Request that creates token (ex user login in application context)
 	http.HandleFunc("/request-token", requestToken)	
+
+	// Request that requires valid token (ex get some private user data in application context)
+	http.HandleFunc("/request-resource", requestResource)	
 	
-	http.CanonicalHeaderKey("/test")
-	
+	http.HandleFunc("/request-another-resource", requestAnotherResource)	
+
 	http.ListenAndServe(":6200", nil)
 }
 
@@ -33,17 +36,59 @@ func requestToken(w http.ResponseWriter, r *http.Request){
 		"field": "value",
 	}
 
-	algo := gobware.KekwAlgorithm{}
-	token := gobware.CreateToken(secret, salt, data, algo)
-	encodedToken := token.Encode(salt)
-	fmt.Println(token)
+	token, err := gobware.CreateToken("someUserId", data)
 
-	w.Header().Set("Authorization", encodedToken)
+	if err != nil {
+		panic(err)
+	}
 
+	cookie := http.Cookie{
+		Name: tokenName,
+		Value: token,
+		Expires: time.Now().Add(expirationTime),
+		HttpOnly: true,
+		Secure: true,
+	}
+
+	http.SetCookie(w, &cookie)
+	
 	w.WriteHeader(http.StatusOK)
 }
 
-func test(w http.ResponseWriter, r *http.Request){
-	fmt.Println("test")
-	//fmt.Println(r.CanonicalHeaderKey())
+func requestResource(w http.ResponseWriter, r *http.Request){
+	cookie, err := r.Cookie(tokenName)
+	fmt.Println(cookie)
+	var requestVerified bool
+
+	requestVerified, cookie.Value, err = gobware.VerifyToken(cookie.Value)
+	fmt.Println(requestVerified)
+	if requestVerified && err != nil {
+		panic(err)
+	}
+
+	if err != nil {
+		w.Write([]byte("Cookie not found"))
+	} else {
+		value := cookie.Value
+		w.Write([]byte(value))
+	}
+}
+
+func requestAnotherResource(w http.ResponseWriter, r *http.Request){
+	cookie, err := r.Cookie(tokenName)
+	fmt.Println(cookie)
+	var requestVerified bool
+
+	requestVerified, cookie.Value, err = gobware.VerifyToken(cookie.Value)
+	fmt.Println(requestVerified)
+	if requestVerified && err != nil {
+		panic(err)
+	}
+
+	if err != nil {
+		w.Write([]byte("Cookie not found"))
+	} else {
+		value := cookie.Value
+		w.Write([]byte(value))
+	}
 }

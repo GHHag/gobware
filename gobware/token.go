@@ -1,53 +1,149 @@
 package gobware
 
-import(
-	"net/http"
-	"time"
+import (
+	"encoding/base64"
+	"encoding/json"
+	"crypto/hmac"
+	"crypto/sha256"
+	//"fmt"
 )
 
-const expirationTime int64 = 3600
- 
+var secret = "SECRET"
+
+/////////////////////////////////////////////////
+//
+//		Token
+// 
+/////////////////////////////////////////////////
+
 type Token struct {
-	Secret string `json:"secret"`
 	UserId string `json:"userId"`
-	Expires int64 `json:"expires"`
-	Encoded bool `json:"encoded"`
 	Data map[string]interface{} `json:"data"`
 }
 
-func CreateToken(secret string, userId string, data map[string]interface{}, algo TokenAlgorithm)(Token){
-//func CreateToken(secret string, userId string)(Token){
+func(token *Token) encode()([]byte, error){
+	encodedToken, err := json.Marshal(token)
+	if err != nil {
+		return nil, err
+	}
+
+	return encodedToken, nil
+}
+
+func(token *Token) Decode(encodedToken []byte)(error){
+	err := json.Unmarshal(encodedToken, token)
+	if err != nil {
+		return err
+	}
+	
+	return nil
+}
+
+/////////////////////////////////////////////////
+//
+//		SignedToken
+// 
+/////////////////////////////////////////////////
+
+type SignedToken struct {
+	Data []byte `json:"data"`
+	Signature []byte `json:"signature"`
+}
+
+func(signedToken *SignedToken) encode()(string, error){
+	encodedSignedToken, err := json.Marshal(signedToken)
+	if err != nil {
+		return "", nil
+	}
+
+	return base64.URLEncoding.EncodeToString(encodedSignedToken), nil
+}
+
+func(signedToken *SignedToken) Decode(encodedSignedToken string)(error){
+	decodedSignedToken, err := base64.URLEncoding.DecodeString(encodedSignedToken)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(decodedSignedToken, signedToken)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func(signedToken *SignedToken) sign(){
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(signedToken.Data))
+	signedToken.Signature = []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
+}
+
+func(signedToken *SignedToken) Verify()(bool){
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(signedToken.Data)
+
+	expected := []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
+
+	return hmac.Equal(signedToken.Signature, expected)
+}
+
+
+/////////////////////////////////////////////////
+//
+//		Token utils
+//
+/////////////////////////////////////////////////
+
+func CreateToken(userId string, data map[string]interface{})(string, error){
 	token := Token{
-		Secret: secret,
 		UserId: userId,
-		Expires: time.Now().Unix() + expirationTime,
-		Encoded: false,
 		Data: data,
 	}
 
-	algo.Encrypt(&token)
+	var err error
 
-	return token
+	signedToken := SignedToken{}
+	signedToken.Data, err = token.encode()
+	if err != nil {
+		return "", err
+	}
+
+	signedToken.sign()
+
+	signedTokenEncoded, err := signedToken.encode()
+	if err != nil {
+		return "", err
+	}
+
+	return signedTokenEncoded, nil
 }
 
-func(Token) Encode(salt string)(string){
-	return "MOCK ENCODED JSON TOKEN OBJECT"
+func VerifyToken(signedTokenEncoded string)(bool, string, error){
+	decodedSignedToken := SignedToken{}
+
+	err := decodedSignedToken.Decode(signedTokenEncoded)
+	if err != nil {
+		return false, "", err
+	}
+
+	check := decodedSignedToken.Verify()
+	decodedToken := Token{}
+	decodedToken.Decode(decodedSignedToken.Data)
+
+	// call some function/chain to validate user
+	//config.RunChain(decodedToken)
+	//decodedToken.validate()
+
+	return check, signedTokenEncoded, nil
 }
 
-func CheckExpiration(token Token)(bool){
-	return token.Expires - time.Now().Unix() < 0
-}
-
-func Validate(token Token, algo TokenAlgorithm)(Token){
+/*func(token Token) Validate(algo TokenAlgorithm)(Token){
 	algo.Decrypt(&token)
 
 	return token
 }
 
-func Verify(token Token, config Configuration, w http.ResponseWriter, r *http.Request){
+func(token Token) Verify(config Configuration, w http.ResponseWriter, r *http.Request){
 	config.RunChain(&token, w, r)
-}
-
-func GetData(token Token)(bool, map[string]interface{}){
-	return token.Encoded, token.Data
-}
+}*/
