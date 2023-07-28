@@ -3,7 +3,7 @@ package main
 import(
 	"net/http"
 	//"encoding/json"
-	"fmt"
+	//"fmt"
 	"time"
 	"github.com/GHHag/gobware.git/gobware"
 )
@@ -28,7 +28,19 @@ func main(){
 	
 	http.HandleFunc("/request-another-resource", requestAnotherResource)	
 
-	http.ListenAndServe(":6200", nil)
+	//http.ListenAndServe(":6200", nil)
+
+	/*handler := &gobware.HandlerAdapter{
+		Handler: http.DefaultServeMux,
+		//Handler: http.NewServeMux(),
+	}*/
+	handler := gobware.NewHandlerAdapter() //***
+	http.ListenAndServe(":6200", handler) //***
+
+	//http.ListenAndServeTLS(":6200", certFile, keyFile, handler)
+
+	//x := gobware.MiddlewareHandlerFunc
+	//http.ListenAndServe(":6200", gobware.MiddlewareHandlerFunc)
 }
 
 func requestToken(w http.ResponseWriter, r *http.Request){
@@ -56,13 +68,13 @@ func requestToken(w http.ResponseWriter, r *http.Request){
 }
 
 func requestResource(w http.ResponseWriter, r *http.Request){
-	cookie, err := r.Cookie(tokenName)
-	fmt.Println(cookie)
-	var requestVerified bool
+	//cookie, err := r.Cookie(tokenName)
+	//fmt.Println(cookie)
+	//var requestVerified bool
 
-	requestVerified, cookie.Value, err = gobware.VerifyToken(cookie.Value)
-	fmt.Println(requestVerified)
-	if requestVerified && err != nil {
+	//requestVerified, cookie.Value, err = gobware.VerifyToken(cookie.Value)
+	//fmt.Println(requestVerified)
+	/*if requestVerified && err != nil {
 		panic(err)
 	}
 
@@ -71,16 +83,18 @@ func requestResource(w http.ResponseWriter, r *http.Request){
 	} else {
 		value := cookie.Value
 		w.Write([]byte(value))
-	}
+	}*/
+
+	w.Write([]byte("Resource"))
 }
 
 func requestAnotherResource(w http.ResponseWriter, r *http.Request){
-	cookie, err := r.Cookie(tokenName)
-	fmt.Println(cookie)
+	/*cookie, err := r.Cookie(tokenName)
+	//fmt.Println(cookie)
 	var requestVerified bool
 
 	requestVerified, cookie.Value, err = gobware.VerifyToken(cookie.Value)
-	fmt.Println(requestVerified)
+	//fmt.Println(requestVerified)
 	if requestVerified && err != nil {
 		panic(err)
 	}
@@ -90,5 +104,7 @@ func requestAnotherResource(w http.ResponseWriter, r *http.Request){
 	} else {
 		value := cookie.Value
 		w.Write([]byte(value))
-	}
+	}*/
+
+	w.Write([]byte("Another resource"))
 }

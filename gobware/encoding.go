@@ -8,7 +8,7 @@ type Encoder struct {
 
 }
 
-func(encoder Encoder) encode(value string){
+func(encoder Encoder) encode(value string) {
 
 }
 
@@ -16,6 +16,6 @@ type PasswordEncoder struct {
 
 }
 
-func(encoder PasswordEncoder) encode(value string){
+func(encoder PasswordEncoder) encode(value string) {
 
 }

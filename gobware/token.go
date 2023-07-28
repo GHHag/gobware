@@ -5,23 +5,16 @@ import (
 	"encoding/json"
 	"crypto/hmac"
 	"crypto/sha256"
-	//"fmt"
 )
 
 var secret = "SECRET"
-
-/////////////////////////////////////////////////
-//
-//		Token
-// 
-/////////////////////////////////////////////////
 
 type Token struct {
 	UserId string `json:"userId"`
 	Data map[string]interface{} `json:"data"`
 }
 
-func(token *Token) encode()([]byte, error){
+func(token *Token) encode() ([]byte, error) {
 	encodedToken, err := json.Marshal(token)
 	if err != nil {
 		return nil, err
@@ -30,7 +23,7 @@ func(token *Token) encode()([]byte, error){
 	return encodedToken, nil
 }
 
-func(token *Token) Decode(encodedToken []byte)(error){
+func(token *Token) Decode(encodedToken []byte) error {
 	err := json.Unmarshal(encodedToken, token)
 	if err != nil {
 		return err
@@ -39,18 +32,12 @@ func(token *Token) Decode(encodedToken []byte)(error){
 	return nil
 }
 
-/////////////////////////////////////////////////
-//
-//		SignedToken
-// 
-/////////////////////////////////////////////////
-
 type SignedToken struct {
-	Data []byte `json:"data"`
 	Signature []byte `json:"signature"`
+	Data []byte `json:"data"`
 }
 
-func(signedToken *SignedToken) encode()(string, error){
+func(signedToken *SignedToken) encode() (string, error) {
 	encodedSignedToken, err := json.Marshal(signedToken)
 	if err != nil {
 		return "", nil
@@ -59,7 +46,7 @@ func(signedToken *SignedToken) encode()(string, error){
 	return base64.URLEncoding.EncodeToString(encodedSignedToken), nil
 }
 
-func(signedToken *SignedToken) Decode(encodedSignedToken string)(error){
+func(signedToken *SignedToken) Decode(encodedSignedToken string) error {
 	decodedSignedToken, err := base64.URLEncoding.DecodeString(encodedSignedToken)
 	if err != nil {
 		return err
@@ -73,13 +60,13 @@ func(signedToken *SignedToken) Decode(encodedSignedToken string)(error){
 	return nil
 }
 
-func(signedToken *SignedToken) sign(){
+func(signedToken *SignedToken) sign() {
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(signedToken.Data))
 	signedToken.Signature = []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
 }
 
-func(signedToken *SignedToken) Verify()(bool){
+func(signedToken *SignedToken) Verify() bool {
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write(signedToken.Data)
 
@@ -88,14 +75,7 @@ func(signedToken *SignedToken) Verify()(bool){
 	return hmac.Equal(signedToken.Signature, expected)
 }
 
-
-/////////////////////////////////////////////////
-//
-//		Token utils
-//
-/////////////////////////////////////////////////
-
-func CreateToken(userId string, data map[string]interface{})(string, error){
+func CreateToken(userId string, data map[string]interface{}) (string, error) {
 	token := Token{
 		UserId: userId,
 		Data: data,
@@ -111,18 +91,18 @@ func CreateToken(userId string, data map[string]interface{})(string, error){
 
 	signedToken.sign()
 
-	signedTokenEncoded, err := signedToken.encode()
+	encodedSignedToken, err := signedToken.encode()
 	if err != nil {
 		return "", err
 	}
 
-	return signedTokenEncoded, nil
+	return encodedSignedToken, nil
 }
 
-func VerifyToken(signedTokenEncoded string)(bool, string, error){
+func VerifyToken(encodedSignedToken string) (bool, string, error) {
 	decodedSignedToken := SignedToken{}
 
-	err := decodedSignedToken.Decode(signedTokenEncoded)
+	err := decodedSignedToken.Decode(encodedSignedToken)
 	if err != nil {
 		return false, "", err
 	}
@@ -135,7 +115,7 @@ func VerifyToken(signedTokenEncoded string)(bool, string, error){
 	//config.RunChain(decodedToken)
 	//decodedToken.validate()
 
-	return check, signedTokenEncoded, nil
+	return check, encodedSignedToken, nil
 }
 
 /*func(token Token) Validate(algo TokenAlgorithm)(Token){
