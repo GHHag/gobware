@@ -3,7 +3,7 @@ package main
 import(
 	"net/http"
 	//"encoding/json"
-	//"fmt"
+	"fmt"
 	"time"
 	"github.com/GHHag/gobware.git/gobware"
 )
@@ -27,17 +27,22 @@ func createSecurityChain() (gobware.Configuration){
 }
 
 func createACLRules() (gobware.ACL){
-	acl := gobware.ACL{}
+	acl := gobware.ACL{
+		Roles: make(map[string]gobware.Role),
+	}
 
 	acl.NewACLRule("visitor", "/request-token", []string {"GET"})
 	acl.NewACLRule("user", "/request-resource", []string {"GET"})
-	acl.NewACLRule("user", "/request-another-resource", []string {"GET"})
+	acl.NewACLRule("user", "/request-another-resource", []string {"GET", "POST", "PUT"})
+
+	fmt.Println(acl)
 
 	return acl
 }
 
 func main(){
 	config := createSecurityChain()
+	_ = createACLRules()
 
 	// Request that creates token (ex user login in application context)
 	http.HandleFunc("/request-token", requestToken)	

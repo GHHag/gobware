@@ -1,12 +1,7 @@
 package gobware
 
 import (
-	//"net/http"
 )
-
-/*type ACL struct {
-	ACLMapping []map[string] map[string] map[string] string
-}*/
 
 type ACL struct {
 	Roles map[string] Role
@@ -17,53 +12,50 @@ type Role struct {
 }
 
 type Route struct {
-	HttpMethods map[string] HttpMethod
+	HttpMethods map[string] bool
 }
 
-type HttpMethod struct {
-	HttpVerb map[string] bool
-}
-
-func(acl *ACL) NewACLRule(role string, route string, httpMethods []string){
-	value, ok := acl.Roles[role]
+func(acl *ACL) NewACLRule(role string, route string, httpMethods []string) {
+	_, ok := acl.Roles[role]
 	if !ok {
+		acl.NewACLRole(role)
+	}
 
+	_, ok = acl.Roles[role].Routes[route]
+	if !ok {
+		acl.NewACLRoute(role, route)
 	}
 	
-	for _, httpMethod := range httpMethods {
-
-	}
-}
-
-func(acl *ACL) NewACLRole(role string) (Role){
-	aclRole, ok := acl.Roles[role]
 	if !ok {
-		acl.Roles[role] = Role{}
+		acl.NewACLMethods(role, route, httpMethods)
 	}
-
-	return aclRole
 }
 
-func(acl *ACL) NewACLRoute(role string, route string) (Route){
-	aclRoute, ok := acl.Roles[role].Routes[route]
+func(acl *ACL) NewACLRole(role string) {
+	_, ok := acl.Roles[role]
 	if !ok {
-		acl.Roles[role].Routes[route] = Route{}
-	}
-
-	return aclRoute
-}
-
-func(acl *ACL) NewACLMethods(role string, route string, httpMethods []string) (HttpMethod){
-	var aclMethod HttpMethod
-	var ok bool
-	for _, httpMethod := range httpMethods {
-		aclMethod, ok = acl.Roles[role].Routes[route].HttpMethods[httpMethod]
-		if !ok {
-			acl.Roles[role].Routes[route].HttpMethods[httpMethod].HttpVerb[httpMethod] = true
+		acl.Roles[role] = Role{
+			Routes: make(map[string] Route),
 		}
 	}
+}
 
-	return aclMethod
+func(acl *ACL) NewACLRoute(role string, route string) {
+	_, ok := acl.Roles[role].Routes[route]
+	if !ok {
+		acl.Roles[role].Routes[route] = Route{
+			HttpMethods: make(map[string] bool),
+		}
+	}
+}
+
+func(acl *ACL) NewACLMethods(role string, route string, httpVerbs []string) {
+	for _, httpVerb := range httpVerbs {
+		_, ok := acl.Roles[role].Routes[route].HttpMethods[httpVerb]
+		if !ok {
+			acl.Roles[role].Routes[route].HttpMethods[httpVerb] = true
+		}
+	}
 }
 
 /*func(routeAccess *RouteAccess) CheckAccess() (bool){
