@@ -14,12 +14,31 @@ var salt string = "SALT"
 var tokenName string = "auth"
 var expirationTime time.Duration = time.Hour
 
-func createSecurityChain(){
-	//securityConfig := gobware.Configuration{}
-	//append(securityConfig.SecurityChain, gobware.CheckToken)
+func createSecurityChain() (gobware.Configuration){
+	var securityChain []gobware.ChainLink	
+
+	securityConfig := gobware.Configuration{
+		Chain: securityChain,
+	}
+	securityConfig.AddChainLink(gobware.CheckToken)
+	securityConfig.AddChainLink(gobware.CheckAuth)
+
+	return securityConfig
+}
+
+func createACLRules() (gobware.ACL){
+	acl := gobware.ACL{}
+
+	acl.NewACLRule("visitor", "/request-token", []string {"GET"})
+	acl.NewACLRule("user", "/request-resource", []string {"GET"})
+	acl.NewACLRule("user", "/request-another-resource", []string {"GET"})
+
+	return acl
 }
 
 func main(){
+	config := createSecurityChain()
+
 	// Request that creates token (ex user login in application context)
 	http.HandleFunc("/request-token", requestToken)	
 
@@ -34,7 +53,7 @@ func main(){
 		Handler: http.DefaultServeMux,
 		//Handler: http.NewServeMux(),
 	}*/
-	handler := gobware.NewHandlerAdapter() //***
+	handler := gobware.NewHandlerAdapter(http.DefaultServeMux, config) //***
 	http.ListenAndServe(":6200", handler) //***
 
 	//http.ListenAndServeTLS(":6200", certFile, keyFile, handler)
@@ -48,7 +67,7 @@ func requestToken(w http.ResponseWriter, r *http.Request){
 		"field": "value",
 	}
 
-	token, err := gobware.CreateToken("someUserId", data)
+	token, err := gobware.NewToken("someUserId", data)
 
 	if err != nil {
 		panic(err)

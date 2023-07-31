@@ -22,16 +22,17 @@ func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {
 
 */
 
-var middlewareConfig MiddlewareConfig = MiddlewareConfig{}
+//var middlewareConfig MiddlewareConfig = MiddlewareConfig{}
 
-type MiddlewareHandlerFunc func(http.ResponseWriter, *http.Request)
+/*type MiddlewareHandlerFunc func(http.ResponseWriter, *http.Request)
+//type MiddlewareHandlerFunc func(http.HandlerFunc) (http.HandlerFunc)
 //type MiddlewareFunc func(*http.Request)
 
 func(f MiddlewareHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request){
 	//middlewareConfig.RunChain(r)
 	fmt.Println("\nLITTLE MIDDLEWARE")
 	f(w, r)
-}
+}*/
 
 /*func(f MiddlewareFunc) handleMiddleware(r *http.Request){
 	f(r)
@@ -41,7 +42,7 @@ func(f MiddlewareHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request){
 
 type MiddlewareHandler interface {
 	ServeHTTP(http.ResponseWriter, *http.Request)
-	handleMiddleware(*http.Request)
+	//handleMiddleware(*http.Request)
 	runMiddleware(*http.Request)
 }
 
@@ -50,14 +51,15 @@ type HandlerAdapter struct {
 	configuration Configuration
 }
 
-func NewHandlerAdapter() (*HandlerAdapter){
+func NewHandlerAdapter(handler http.Handler, configuration Configuration) (*HandlerAdapter){
 	return &HandlerAdapter{
-		handler: http.DefaultServeMux,
+		handler: handler,
+		configuration: configuration,
 	}
 }
 
 func(h *HandlerAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request){
-	h.handleMiddleware(r)
+	//h.handleMiddleware(r)
 	h.runMiddleware(r)
 	h.handler.ServeHTTP(w, r)
 }
@@ -76,12 +78,4 @@ func(h *HandlerAdapter) handleMiddleware(r *http.Request) {
 
 func(h *HandlerAdapter) runMiddleware(r *http.Request) {
 	h.configuration.RunChain(r)
-
-	/*cookie, err := r.Cookie("auth")
-
-	if err != nil {
-		fmt.Println("Cookie not found")
-	} else{
-		fmt.Println(cookie)
-	}*/
 }

@@ -75,7 +75,7 @@ func(signedToken *SignedToken) Verify() bool {
 	return hmac.Equal(signedToken.Signature, expected)
 }
 
-func CreateToken(userId string, data map[string]interface{}) (string, error) {
+func NewToken(userId string, data map[string]interface{}) (string, error) {
 	token := Token{
 		UserId: userId,
 		Data: data,
