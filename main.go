@@ -9,7 +9,7 @@ import(
 )
 
 // "ENV" VARIABLES
-var secret string = "SECRET"
+//var secret string = "SECRET" // secret is defined in token.go, should be env var
 var salt string = "SALT"
 var tokenName string = "auth"
 var expirationTime time.Duration = time.Hour
@@ -34,6 +34,7 @@ func createACLRules() (gobware.ACL){
 	acl.NewACLRule("visitor", "/request-token", []string {"GET"})
 	acl.NewACLRule("user", "/request-resource", []string {"GET"})
 	acl.NewACLRule("user", "/request-another-resource", []string {"GET", "POST", "PUT"})
+	acl.NewACLRule("visitor", "/request-token", []string {"POST"})
 
 	fmt.Println(acl)
 
@@ -42,7 +43,14 @@ func createACLRules() (gobware.ACL){
 
 func main(){
 	config := createSecurityChain()
-	_ = createACLRules()
+
+	acl := createACLRules()
+	access := acl.CheckAccess("visitor", "/request-token", "POST")
+	fmt.Println(access)
+	access = acl.CheckAccess("visitor", "/request-token", "GET")
+	fmt.Println(access)
+	access = acl.CheckAccess("visitor", "/request-resource", "GET")
+	fmt.Println(access)
 
 	// Request that creates token (ex user login in application context)
 	http.HandleFunc("/request-token", requestToken)	
@@ -69,7 +77,8 @@ func main(){
 
 func requestToken(w http.ResponseWriter, r *http.Request){
 	data := map[string]interface{}{
-		"field": "value",
+		"userId": "value",
+		"userRole": "value",
 	}
 
 	token, err := gobware.NewToken("someUserId", data)

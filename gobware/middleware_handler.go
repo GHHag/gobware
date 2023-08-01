@@ -2,7 +2,6 @@ package gobware
 
 import (
 	"net/http"
-	"fmt"
 )
 
 /*
@@ -40,9 +39,9 @@ func(f MiddlewareHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request){
 
 ///////////////////////////////////////////////////////////////////
 
+// Explore example use cases of this interface and if it is needed at all
 type MiddlewareHandler interface {
 	ServeHTTP(http.ResponseWriter, *http.Request)
-	//handleMiddleware(*http.Request)
 	runMiddleware(*http.Request)
 }
 
@@ -59,21 +58,8 @@ func NewHandlerAdapter(handler http.Handler, configuration Configuration) (*Hand
 }
 
 func(h *HandlerAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request){
-	//h.handleMiddleware(r)
 	h.runMiddleware(r)
 	h.handler.ServeHTTP(w, r)
-}
-
-func(h *HandlerAdapter) handleMiddleware(r *http.Request) {
-	fmt.Println("\nLITTLE MIDDLEWARE")
-
-	cookie, err := r.Cookie("auth")
-
-	if err != nil {
-		fmt.Println("Cookie not found")
-	} else{
-		fmt.Println(cookie)
-	}
 }
 
 func(h *HandlerAdapter) runMiddleware(r *http.Request) {

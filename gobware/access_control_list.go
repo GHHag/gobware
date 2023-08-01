@@ -26,9 +26,7 @@ func(acl *ACL) NewACLRule(role string, route string, httpMethods []string) {
 		acl.NewACLRoute(role, route)
 	}
 	
-	if !ok {
-		acl.NewACLMethods(role, route, httpMethods)
-	}
+	acl.NewACLMethods(role, route, httpMethods)
 }
 
 func(acl *ACL) NewACLRole(role string) {
@@ -49,16 +47,19 @@ func(acl *ACL) NewACLRoute(role string, route string) {
 	}
 }
 
-func(acl *ACL) NewACLMethods(role string, route string, httpVerbs []string) {
-	for _, httpVerb := range httpVerbs {
-		_, ok := acl.Roles[role].Routes[route].HttpMethods[httpVerb]
+func(acl *ACL) NewACLMethods(role string, route string, httpMethods []string) {
+	for _, httpMethod := range httpMethods {
+		_, ok := acl.Roles[role].Routes[route].HttpMethods[httpMethod]
 		if !ok {
-			acl.Roles[role].Routes[route].HttpMethods[httpVerb] = true
+			acl.Roles[role].Routes[route].HttpMethods[httpMethod] = true
 		}
 	}
 }
 
-/*func(routeAccess *RouteAccess) CheckAccess() (bool){
+func(acl *ACL) AddCustomRule(function func(), data interface{}){
+	// Allow package users to add custom rules?
+}
 
-	return true
-}*/
+func(acl *ACL) CheckAccess(role string, route string, httpMethod string) (bool){
+	return acl.Roles[role].Routes[route].HttpMethods[httpMethod]
+}
