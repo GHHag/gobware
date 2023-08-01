@@ -15,6 +15,12 @@ type Route struct {
 	HttpMethods map[string] bool
 }
 
+func NewACL() (*ACL){
+	return &ACL{
+		Roles: make(map[string] Role),
+	}
+}
+
 func(acl *ACL) NewACLRule(role string, route string, httpMethods []string) {
 	_, ok := acl.Roles[role]
 	if !ok {

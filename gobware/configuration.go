@@ -20,29 +20,68 @@ the token in a ChainLink?
 type ChainLink func(*http.Request) (bool)
 
 type Configuration struct {
-	Chain []ChainLink
+	chain []ChainLink
+	accessControlList *ACL
 }
 
-func(config *Configuration) AddChainLink(chainLink ChainLink){
-	config.Chain = append(config.Chain, chainLink)
-}
-
-func(config *Configuration) RunChain(r *http.Request){
-	for _, chainLink := range config.Chain {
-		chainLink(r)
-		//chainLink.runChainLink(r)
+func NewConfiguration(chain []ChainLink, ACL *ACL) (*Configuration){
+	return &Configuration{
+		chain: chain,
+		accessControlList: ACL,
 	}
 }
 
-func CheckToken(r *http.Request) (bool){
-	//evaluated := l.evaluate()
-	fmt.Println("CheckToken")
+func(config *Configuration) AddChainLink(chainLink ChainLink){
+	config.chain = append(config.chain, chainLink)
+}
+
+func(config *Configuration) RunChain(r *http.Request) (bool){
+	for _, chainLink := range config.chain {
+		pass := chainLink(r)
+	
+		if !pass {
+			return false
+		}
+	}
 
 	return true
 }
 
-func CheckAuth(r *http.Request) (bool){
-	fmt.Println("CheckAuth")
+func(config *Configuration) CheckToken(r *http.Request) (bool){
+	//evaluated := l.evaluate()
+	/*fmt.Println("")
+	fmt.Println("CheckToken")
+	fmt.Println(*r)*/
 
-	return false
+	return true
+}
+
+func(config *Configuration) CheckAuth(r *http.Request) (bool){
+	url := r.URL.Path
+	httpMethod := r.Method
+
+	// If ACL for the url + method is allowed for visitor: return true
+	if url == "/request-token" {
+		return true
+	}
+	
+	cookie, err := r.Cookie("auth")
+	if err != nil {
+		return false
+	}	
+
+	var verified bool
+	var value *Token
+	//verified, cookie.Value, err = VerifyToken(cookie.Value)
+	verified, value, err = VerifyToken(cookie.Value)
+	if !verified || err != nil {
+		return false
+	}
+
+	fmt.Println(value.Data["userRole"])
+
+	access := config.accessControlList.CheckAccess(value.Data["userRole"], url, httpMethod)
+	fmt.Println(access)
+
+	return access
 }

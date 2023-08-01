@@ -3,7 +3,7 @@ package main
 import(
 	"net/http"
 	//"encoding/json"
-	"fmt"
+	//"fmt"
 	"time"
 	"github.com/GHHag/gobware.git/gobware"
 )
@@ -14,43 +14,31 @@ var salt string = "SALT"
 var tokenName string = "auth"
 var expirationTime time.Duration = time.Hour
 
-func createSecurityChain() (gobware.Configuration){
+func createACLRules() (*gobware.ACL){
+	ACL := gobware.NewACL()
+	ACL.NewACLRule("user", "/request-token", []string {"GET"})
+	ACL.NewACLRule("user", "/request-resource", []string {"GET"})
+	ACL.NewACLRule("user", "/request-another-resource", []string {"GET", "POST", "PUT"})
+	ACL.NewACLRule("visitor", "/request-token", []string {"GET"})
+	ACL.NewACLRule("visitor", "/request-resource", []string {"GET"})
+	ACL.NewACLRule("visitor", "/request-token", []string {"POST"})
+
+	return ACL
+}
+
+func createSecurityChain(ACL *gobware.ACL) (*gobware.Configuration){
 	var securityChain []gobware.ChainLink	
 
-	securityConfig := gobware.Configuration{
-		Chain: securityChain,
-	}
-	securityConfig.AddChainLink(gobware.CheckToken)
-	securityConfig.AddChainLink(gobware.CheckAuth)
+	securityConfig := gobware.NewConfiguration(securityChain, ACL)
+	securityConfig.AddChainLink(securityConfig.CheckToken)
+	securityConfig.AddChainLink(securityConfig.CheckAuth)
 
 	return securityConfig
 }
 
-func createACLRules() (gobware.ACL){
-	acl := gobware.ACL{
-		Roles: make(map[string]gobware.Role),
-	}
-
-	acl.NewACLRule("visitor", "/request-token", []string {"GET"})
-	acl.NewACLRule("user", "/request-resource", []string {"GET"})
-	acl.NewACLRule("user", "/request-another-resource", []string {"GET", "POST", "PUT"})
-	acl.NewACLRule("visitor", "/request-token", []string {"POST"})
-
-	fmt.Println(acl)
-
-	return acl
-}
-
 func main(){
-	config := createSecurityChain()
-
-	acl := createACLRules()
-	access := acl.CheckAccess("visitor", "/request-token", "POST")
-	fmt.Println(access)
-	access = acl.CheckAccess("visitor", "/request-token", "GET")
-	fmt.Println(access)
-	access = acl.CheckAccess("visitor", "/request-resource", "GET")
-	fmt.Println(access)
+	ACL := createACLRules()
+	config := createSecurityChain(ACL)
 
 	// Request that creates token (ex user login in application context)
 	http.HandleFunc("/request-token", requestToken)	
@@ -76,9 +64,10 @@ func main(){
 }
 
 func requestToken(w http.ResponseWriter, r *http.Request){
-	data := map[string]interface{}{
-		"userId": "value",
-		"userRole": "value",
+	data := map[string] string{
+		//"userId": "value",
+		"userRole": "visitor",
+		//"userRole": "user",
 	}
 
 	token, err := gobware.NewToken("someUserId", data)
@@ -101,43 +90,9 @@ func requestToken(w http.ResponseWriter, r *http.Request){
 }
 
 func requestResource(w http.ResponseWriter, r *http.Request){
-	//cookie, err := r.Cookie(tokenName)
-	//fmt.Println(cookie)
-	//var requestVerified bool
-
-	//requestVerified, cookie.Value, err = gobware.VerifyToken(cookie.Value)
-	//fmt.Println(requestVerified)
-	/*if requestVerified && err != nil {
-		panic(err)
-	}
-
-	if err != nil {
-		w.Write([]byte("Cookie not found"))
-	} else {
-		value := cookie.Value
-		w.Write([]byte(value))
-	}*/
-
 	w.Write([]byte("Resource"))
 }
 
 func requestAnotherResource(w http.ResponseWriter, r *http.Request){
-	/*cookie, err := r.Cookie(tokenName)
-	//fmt.Println(cookie)
-	var requestVerified bool
-
-	requestVerified, cookie.Value, err = gobware.VerifyToken(cookie.Value)
-	//fmt.Println(requestVerified)
-	if requestVerified && err != nil {
-		panic(err)
-	}
-
-	if err != nil {
-		w.Write([]byte("Cookie not found"))
-	} else {
-		value := cookie.Value
-		w.Write([]byte(value))
-	}*/
-
 	w.Write([]byte("Another resource"))
 }

@@ -11,7 +11,7 @@ var secret = "SECRET"
 
 type Token struct {
 	UserId string `json:"userId"`
-	Data map[string]interface{} `json:"data"`
+	Data map[string] string `json:"data"`
 }
 
 func(token *Token) encode() ([]byte, error) {
@@ -75,7 +75,7 @@ func(signedToken *SignedToken) Verify() bool {
 	return hmac.Equal(signedToken.Signature, expected)
 }
 
-func NewToken(userId string, data map[string]interface{}) (string, error) {
+func NewToken(userId string, data map[string] string) (string, error) {
 	token := Token{
 		UserId: userId,
 		Data: data,
@@ -99,12 +99,14 @@ func NewToken(userId string, data map[string]interface{}) (string, error) {
 	return encodedSignedToken, nil
 }
 
-func VerifyToken(encodedSignedToken string) (bool, string, error) {
+//func VerifyToken(encodedSignedToken string) (bool, string, error) {
+func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
 	decodedSignedToken := SignedToken{}
 
 	err := decodedSignedToken.Decode(encodedSignedToken)
 	if err != nil {
-		return false, "", err
+		//return false, "", err
+		return false, &Token{}, err
 	}
 
 	check := decodedSignedToken.Verify()
@@ -115,7 +117,8 @@ func VerifyToken(encodedSignedToken string) (bool, string, error) {
 	//config.RunChain(decodedToken)
 	//decodedToken.validate()
 
-	return check, encodedSignedToken, nil
+	//return check, string(decodedSignedToken.Data), nil
+	return check, &decodedToken, nil
 }
 
 /*func(token Token) Validate(algo TokenAlgorithm)(Token){

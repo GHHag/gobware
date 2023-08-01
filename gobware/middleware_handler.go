@@ -47,21 +47,26 @@ type MiddlewareHandler interface {
 
 type HandlerAdapter struct {
 	handler http.Handler
-	configuration Configuration
+	configuration *Configuration
 }
 
-func NewHandlerAdapter(handler http.Handler, configuration Configuration) (*HandlerAdapter){
+// Should func also return error?
+func NewHandlerAdapter(handler http.Handler, configuration *Configuration) (*HandlerAdapter){
 	return &HandlerAdapter{
 		handler: handler,
 		configuration: configuration,
 	}
 }
 
+// Should func also return error?
 func(h *HandlerAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request){
-	h.runMiddleware(r)
-	h.handler.ServeHTTP(w, r)
+	pass := h.runMiddleware(r)
+	if pass {
+		h.handler.ServeHTTP(w, r)
+	}
 }
 
-func(h *HandlerAdapter) runMiddleware(r *http.Request) {
-	h.configuration.RunChain(r)
+// Should func also return error?
+func(h *HandlerAdapter) runMiddleware(r *http.Request) (bool){
+	return h.configuration.RunChain(r)
 }
