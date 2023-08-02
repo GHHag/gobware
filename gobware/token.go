@@ -23,7 +23,7 @@ func(token *Token) encode() ([]byte, error) {
 	return encodedToken, nil
 }
 
-func(token *Token) Decode(encodedToken []byte) error {
+func(token *Token) decode(encodedToken []byte) error {
 	err := json.Unmarshal(encodedToken, token)
 	if err != nil {
 		return err
@@ -32,12 +32,12 @@ func(token *Token) Decode(encodedToken []byte) error {
 	return nil
 }
 
-type SignedToken struct {
+type signedToken struct {
 	Signature []byte `json:"signature"`
 	Data []byte `json:"data"`
 }
 
-func(signedToken *SignedToken) encode() (string, error) {
+func(signedToken *signedToken) encode() (string, error) {
 	encodedSignedToken, err := json.Marshal(signedToken)
 	if err != nil {
 		return "", nil
@@ -46,7 +46,7 @@ func(signedToken *SignedToken) encode() (string, error) {
 	return base64.URLEncoding.EncodeToString(encodedSignedToken), nil
 }
 
-func(signedToken *SignedToken) Decode(encodedSignedToken string) error {
+func(signedToken *signedToken) decode(encodedSignedToken string) error {
 	decodedSignedToken, err := base64.URLEncoding.DecodeString(encodedSignedToken)
 	if err != nil {
 		return err
@@ -60,13 +60,13 @@ func(signedToken *SignedToken) Decode(encodedSignedToken string) error {
 	return nil
 }
 
-func(signedToken *SignedToken) sign() {
+func(signedToken *signedToken) sign() {
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(signedToken.Data))
 	signedToken.Signature = []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
 }
 
-func(signedToken *SignedToken) Verify() bool {
+func(signedToken *signedToken) verify() bool {
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write(signedToken.Data)
 
@@ -75,6 +75,7 @@ func(signedToken *SignedToken) Verify() bool {
 	return hmac.Equal(signedToken.Signature, expected)
 }
 
+// Return string or *string here?
 func NewToken(userId string, data map[string] string) (string, error) {
 	token := Token{
 		UserId: userId,
@@ -83,7 +84,7 @@ func NewToken(userId string, data map[string] string) (string, error) {
 
 	var err error
 
-	signedToken := SignedToken{}
+	signedToken := signedToken{}
 	signedToken.Data, err = token.encode()
 	if err != nil {
 		return "", err
@@ -99,25 +100,19 @@ func NewToken(userId string, data map[string] string) (string, error) {
 	return encodedSignedToken, nil
 }
 
-//func VerifyToken(encodedSignedToken string) (bool, string, error) {
 func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
-	decodedSignedToken := SignedToken{}
+	decodedSignedToken := signedToken{}
 
-	err := decodedSignedToken.Decode(encodedSignedToken)
+	err := decodedSignedToken.decode(encodedSignedToken)
 	if err != nil {
-		//return false, "", err
 		return false, &Token{}, err
 	}
 
-	check := decodedSignedToken.Verify()
-	decodedToken := Token{}
-	decodedToken.Decode(decodedSignedToken.Data)
+	check := decodedSignedToken.verify()
+	//decodedToken := Token{}
+	var decodedToken Token
+	decodedToken.decode(decodedSignedToken.Data)
 
-	// call some function/chain to validate user
-	//config.RunChain(decodedToken)
-	//decodedToken.validate()
-
-	//return check, string(decodedSignedToken.Data), nil
 	return check, &decodedToken, nil
 }
 

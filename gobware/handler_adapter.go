@@ -51,7 +51,7 @@ type HandlerAdapter struct {
 }
 
 // Should func also return error?
-func NewHandlerAdapter(handler http.Handler, configuration *Configuration) (*HandlerAdapter){
+func NewHandlerAdapter(handler http.Handler, configuration *Configuration) *HandlerAdapter{
 	return &HandlerAdapter{
 		handler: handler,
 		configuration: configuration,
@@ -67,6 +67,6 @@ func(h *HandlerAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request){
 }
 
 // Should func also return error?
-func(h *HandlerAdapter) runMiddleware(r *http.Request) (bool){
+func(h *HandlerAdapter) runMiddleware(r *http.Request) bool{
 	return h.configuration.RunChain(r)
 }

@@ -21,21 +21,22 @@ func NewACL() (*ACL){
 	}
 }
 
-func(acl *ACL) NewACLRule(role string, route string, httpMethods []string) {
+// Change order of how ACL is composed to avoid redundant stuff?
+func(acl *ACL) AddACLRule(role string, route string, httpMethods []string){
 	_, ok := acl.Roles[role]
 	if !ok {
-		acl.NewACLRole(role)
+		acl.addACLRole(role)
 	}
 
 	_, ok = acl.Roles[role].Routes[route]
 	if !ok {
-		acl.NewACLRoute(role, route)
+		acl.addACLRoute(role, route)
 	}
 	
-	acl.NewACLMethods(role, route, httpMethods)
+	acl.addACLMethods(role, route, httpMethods)
 }
 
-func(acl *ACL) NewACLRole(role string) {
+func(acl *ACL) addACLRole(role string){
 	_, ok := acl.Roles[role]
 	if !ok {
 		acl.Roles[role] = Role{
@@ -44,7 +45,7 @@ func(acl *ACL) NewACLRole(role string) {
 	}
 }
 
-func(acl *ACL) NewACLRoute(role string, route string) {
+func(acl *ACL) addACLRoute(role string, route string){
 	_, ok := acl.Roles[role].Routes[route]
 	if !ok {
 		acl.Roles[role].Routes[route] = Route{
@@ -53,7 +54,7 @@ func(acl *ACL) NewACLRoute(role string, route string) {
 	}
 }
 
-func(acl *ACL) NewACLMethods(role string, route string, httpMethods []string) {
+func(acl *ACL) addACLMethods(role string, route string, httpMethods []string){
 	for _, httpMethod := range httpMethods {
 		_, ok := acl.Roles[role].Routes[route].HttpMethods[httpMethod]
 		if !ok {
@@ -66,6 +67,6 @@ func(acl *ACL) AddCustomRule(function func(), data interface{}){
 	// Allow package users to add custom rules?
 }
 
-func(acl *ACL) CheckAccess(role string, route string, httpMethod string) (bool){
+func(acl *ACL) CheckAccess(role string, route string, httpMethod string) bool{
 	return acl.Roles[role].Routes[route].HttpMethods[httpMethod]
 }

@@ -13,15 +13,16 @@ import(
 var salt string = "SALT"
 var tokenName string = "auth"
 var expirationTime time.Duration = time.Hour
+var roleKey string = "userRole"
 
 func createACLRules() (*gobware.ACL){
 	ACL := gobware.NewACL()
-	ACL.NewACLRule("user", "/request-token", []string {"GET"})
-	ACL.NewACLRule("user", "/request-resource", []string {"GET"})
-	ACL.NewACLRule("user", "/request-another-resource", []string {"GET", "POST", "PUT"})
-	ACL.NewACLRule("visitor", "/request-token", []string {"GET"})
-	ACL.NewACLRule("visitor", "/request-resource", []string {"GET"})
-	ACL.NewACLRule("visitor", "/request-token", []string {"POST"})
+	ACL.AddACLRule("user", "/request-token", []string {"GET"})
+	ACL.AddACLRule("user", "/request-resource", []string {"GET"})
+	ACL.AddACLRule("user", "/request-another-resource", []string {"GET", "POST", "PUT"})
+	ACL.AddACLRule("visitor", "/request-token", []string {"GET"})
+	ACL.AddACLRule("visitor", "/request-token", []string {"POST"})
+	ACL.AddACLRule("visitor", "/request-resource", []string {"GET"})
 
 	return ACL
 }
@@ -29,7 +30,7 @@ func createACLRules() (*gobware.ACL){
 func createSecurityChain(ACL *gobware.ACL) (*gobware.Configuration){
 	var securityChain []gobware.ChainLink	
 
-	securityConfig := gobware.NewConfiguration(securityChain, ACL)
+	securityConfig := gobware.NewConfiguration(securityChain, ACL, roleKey, tokenName)
 	securityConfig.AddChainLink(securityConfig.CheckToken)
 	securityConfig.AddChainLink(securityConfig.CheckAuth)
 
@@ -66,8 +67,8 @@ func main(){
 func requestToken(w http.ResponseWriter, r *http.Request){
 	data := map[string] string{
 		//"userId": "value",
-		"userRole": "visitor",
-		//"userRole": "user",
+		roleKey: "visitor",
+		//roleKey: "user",
 	}
 
 	token, err := gobware.NewToken("someUserId", data)
@@ -82,6 +83,7 @@ func requestToken(w http.ResponseWriter, r *http.Request){
 		Expires: time.Now().Add(expirationTime),
 		HttpOnly: true,
 		Secure: true,
+		SameSite: http.SameSiteStrictMode, // What is this?
 	}
 
 	http.SetCookie(w, &cookie)
