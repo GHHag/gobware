@@ -2,8 +2,6 @@ package main
 
 import(
 	"net/http"
-	//"encoding/json"
-	//"fmt"
 	"time"
 	"github.com/GHHag/gobware.git/gobware"
 )
@@ -15,29 +13,30 @@ var tokenName string = "auth"
 var expirationTime time.Duration = time.Hour
 var roleKey string = "userRole"
 
+// Move to file/template that configurates package settings
 func createACLRules() (*gobware.ACL){
 	ACL := gobware.NewACL()
 	ACL.AddACLRule("user", "/request-token", []string {"GET"})
 	ACL.AddACLRule("user", "/request-resource", []string {"GET"})
 	ACL.AddACLRule("user", "/request-another-resource", []string {"GET", "POST", "PUT"})
-	ACL.AddACLRule("visitor", "/request-token", []string {"GET"})
-	ACL.AddACLRule("visitor", "/request-token", []string {"POST"})
-	ACL.AddACLRule("visitor", "/request-resource", []string {"GET"})
+	ACL.AddACLRule("unconstrained", "/request-token", []string {"GET"})
+	ACL.AddACLRule("unconstrained", "/request-token", []string {"POST"})
+	ACL.AddACLRule("unconstrained", "/request-resource", []string {"GET"})
 
 	return ACL
 }
 
+// Move to file/template that configurates package settings
 func createSecurityChain(ACL *gobware.ACL) (*gobware.Configuration){
-	var securityChain []gobware.ChainLink	
-
-	securityConfig := gobware.NewConfiguration(securityChain, ACL, roleKey, tokenName)
+	securityConfig := gobware.NewConfiguration(ACL, roleKey, tokenName)
 	securityConfig.AddChainLink(securityConfig.CheckToken)
-	securityConfig.AddChainLink(securityConfig.CheckAuth)
+	securityConfig.AddChainLink(securityConfig.CheckAuthorization)
 
 	return securityConfig
 }
 
 func main(){
+	// User defined types: gobware.ACL, gobware.Configuration
 	ACL := createACLRules()
 	config := createSecurityChain(ACL)
 
@@ -49,26 +48,15 @@ func main(){
 	
 	http.HandleFunc("/request-another-resource", requestAnotherResource)	
 
-	//http.ListenAndServe(":6200", nil)
-
-	/*handler := &gobware.HandlerAdapter{
-		Handler: http.DefaultServeMux,
-		//Handler: http.NewServeMux(),
-	}*/
 	handler := gobware.NewHandlerAdapter(http.DefaultServeMux, config) //***
 	http.ListenAndServe(":6200", handler) //***
 
 	//http.ListenAndServeTLS(":6200", certFile, keyFile, handler)
-
-	//x := gobware.MiddlewareHandlerFunc
-	//http.ListenAndServe(":6200", gobware.MiddlewareHandlerFunc)
 }
 
 func requestToken(w http.ResponseWriter, r *http.Request){
 	data := map[string] string{
-		//"userId": "value",
-		roleKey: "visitor",
-		//roleKey: "user",
+		roleKey: "user",
 	}
 
 	token, err := gobware.NewToken("someUserId", data)

@@ -65,6 +65,9 @@ func(acl *ACL) addACLMethods(role string, route string, httpMethods []string){
 
 func(acl *ACL) AddCustomRule(function func(), data interface{}){
 	// Allow package users to add custom rules?
+
+	// The ACL type could have a field that stores custom rules as functions
+	// that implements some interface.
 }
 
 func(acl *ACL) CheckAccess(role string, route string, httpMethod string) bool{

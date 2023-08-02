@@ -14,24 +14,22 @@ the token in a ChainLink?
 
 */
 
-// Link function type should accept a *http.Request param as well as
-// a function that return a bool. The bool expression should be possible
-// to make from the data stored in the Data field of the Token type.
+// Make ChainLink an http.Handler adapter?
 type ChainLink func(*http.Request) bool
 
 type Configuration struct {
 	chain []ChainLink
 	accessControlList *ACL
 	roleKey string
-	tokenCookie string
+	tokenKey string
 }
 
-func NewConfiguration(chain []ChainLink, ACL *ACL, roleKey string, tokenCookie string) *Configuration{
+func NewConfiguration(ACL *ACL, roleKey string, tokenKey string) *Configuration{
 	return &Configuration{
-		chain: chain,
+		chain: []ChainLink{},
 		accessControlList: ACL,
 		roleKey: roleKey,
-		tokenCookie: tokenCookie,
+		tokenKey: tokenKey,
 	}
 }
 
@@ -39,8 +37,11 @@ func(config *Configuration) AddChainLink(chainLink ChainLink){
 	config.chain = append(config.chain, chainLink)
 }
 
+// Run ChainLink functions concurrent?
 func(config *Configuration) RunChain(r *http.Request) bool{
 	for _, chainLink := range config.chain {
+		// How to implement functionality for one call extracting/returning
+		// a resource needed by the next chainLink function?
 		pass := chainLink(r)
 	
 		if !pass {
@@ -51,19 +52,19 @@ func(config *Configuration) RunChain(r *http.Request) bool{
 	return true
 }
 
+// Can cookie be verified and extracted in this method, then passed to
+// sequential method/function calls?
 func(config *Configuration) CheckToken(r *http.Request) bool{
 	url := r.URL.Path
 	httpMethod := r.Method
 
-	// Something with similar functionality should be run before checking if a token
-	// cookie exists
-	if config.accessControlList.CheckAccess("visitor", url, httpMethod) {
-		return true
-	}
-
-	cookie, err := r.Cookie(config.tokenCookie)
+	cookie, err := r.Cookie(config.tokenKey)
 	if err != nil {
-		return false
+		access := config.accessControlList.CheckAccess(
+			// Replace literal with constant defined in some approriate place
+			"unconstrained", url, httpMethod,
+		)
+		return access
 	}	
 
 	var verified bool
@@ -72,18 +73,16 @@ func(config *Configuration) CheckToken(r *http.Request) bool{
 	return verified
 }
 
-func(config *Configuration) CheckAuth(r *http.Request) bool{
+func(config *Configuration) CheckAuthorization(r *http.Request) bool{
 	url := r.URL.Path
 	httpMethod := r.Method
 
-	// If ACL for the url + method is allowed for visitor: return true
-	if config.accessControlList.CheckAccess("visitor", url, httpMethod) {
-		return true
-	}
-	
-	cookie, err := r.Cookie(config.tokenCookie)
+	cookie, err := r.Cookie(config.tokenKey)
 	if err != nil {
-		return false
+		access := config.accessControlList.CheckAccess(
+			"unconstrained", url, httpMethod,
+		)
+		return access
 	}	
 
 	var verified bool
@@ -93,13 +92,16 @@ func(config *Configuration) CheckAuth(r *http.Request) bool{
 		return false
 	}
 
-	//fmt.Println(token.Data[config.roleKey])
-
 	access := config.accessControlList.CheckAccess(
 		token.Data[config.roleKey], url, httpMethod,
 	)
 
-	//fmt.Println(access)
-
 	return access
+}
+
+func(config *Configuration) EventSubscribe (r *http.Request) bool{
+	// Some event subscription function
+	// Perhaps should not be defined as a method of the Configuration type?
+
+	return false
 }
