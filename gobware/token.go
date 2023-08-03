@@ -75,8 +75,7 @@ func(signedToken *signedToken) verify() bool {
 	return hmac.Equal(signedToken.Signature, expected)
 }
 
-// Return string or *string here?
-func NewToken(userId string, data map[string] string) (string, error) {
+func NewToken(userId string, data map[string] string) (*string, error) {
 	token := Token{
 		UserId: userId,
 		Data: data,
@@ -87,17 +86,17 @@ func NewToken(userId string, data map[string] string) (string, error) {
 	signedToken := signedToken{}
 	signedToken.Data, err = token.encode()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	signedToken.sign()
 
 	encodedSignedToken, err := signedToken.encode()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return encodedSignedToken, nil
+	return &encodedSignedToken, nil
 }
 
 func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
@@ -105,11 +104,10 @@ func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
 
 	err := decodedSignedToken.decode(encodedSignedToken)
 	if err != nil {
-		return false, &Token{}, err
+		return false, nil, err
 	}
 
 	check := decodedSignedToken.verify()
-	//decodedToken := Token{}
 	var decodedToken Token
 	decodedToken.decode(decodedSignedToken.Data)
 

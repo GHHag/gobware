@@ -2,7 +2,6 @@ package gobware
 
 import (
 	"net/http"
-	//"fmt"
 )
 
 /*
@@ -14,8 +13,10 @@ the token in a ChainLink?
 
 */
 
-// Make ChainLink an http.Handler adapter?
 type ChainLink func(*http.Request) bool
+// Change signature of ChainLink functions if adapter should be implemented
+// another way.
+//type ChainLink func(http.Handler) http.Handler
 
 type Configuration struct {
 	chain []ChainLink
@@ -40,8 +41,6 @@ func(config *Configuration) AddChainLink(chainLink ChainLink){
 // Run ChainLink functions concurrent?
 func(config *Configuration) RunChain(r *http.Request) bool{
 	for _, chainLink := range config.chain {
-		// How to implement functionality for one call extracting/returning
-		// a resource needed by the next chainLink function?
 		pass := chainLink(r)
 	
 		if !pass {
@@ -52,8 +51,6 @@ func(config *Configuration) RunChain(r *http.Request) bool{
 	return true
 }
 
-// Can cookie be verified and extracted in this method, then passed to
-// sequential method/function calls?
 func(config *Configuration) CheckToken(r *http.Request) bool{
 	url := r.URL.Path
 	httpMethod := r.Method
@@ -61,8 +58,7 @@ func(config *Configuration) CheckToken(r *http.Request) bool{
 	cookie, err := r.Cookie(config.tokenKey)
 	if err != nil {
 		access := config.accessControlList.CheckAccess(
-			// Replace literal with constant defined in some approriate place
-			"unconstrained", url, httpMethod,
+			NO_CONSTRAINT, url, httpMethod,
 		)
 		return access
 	}	
@@ -80,7 +76,7 @@ func(config *Configuration) CheckAuthorization(r *http.Request) bool{
 	cookie, err := r.Cookie(config.tokenKey)
 	if err != nil {
 		access := config.accessControlList.CheckAccess(
-			"unconstrained", url, httpMethod,
+			NO_CONSTRAINT, url, httpMethod,
 		)
 		return access
 	}	

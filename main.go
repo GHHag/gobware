@@ -2,6 +2,7 @@ package main
 
 import(
 	"net/http"
+	"log"
 	"time"
 	"github.com/GHHag/gobware.git/gobware"
 )
@@ -19,9 +20,9 @@ func createACLRules() (*gobware.ACL){
 	ACL.AddACLRule("user", "/request-token", []string {"GET"})
 	ACL.AddACLRule("user", "/request-resource", []string {"GET"})
 	ACL.AddACLRule("user", "/request-another-resource", []string {"GET", "POST", "PUT"})
-	ACL.AddACLRule("unconstrained", "/request-token", []string {"GET"})
-	ACL.AddACLRule("unconstrained", "/request-token", []string {"POST"})
-	ACL.AddACLRule("unconstrained", "/request-resource", []string {"GET"})
+	ACL.AddACLRule(gobware.NO_CONSTRAINT, "/request-token", []string {"GET"})
+	ACL.AddACLRule(gobware.NO_CONSTRAINT, "/request-token", []string {"POST"})
+	ACL.AddACLRule(gobware.NO_CONSTRAINT, "/request-resource", []string {"GET"})
 
 	return ACL
 }
@@ -49,7 +50,7 @@ func main(){
 	http.HandleFunc("/request-another-resource", requestAnotherResource)	
 
 	handler := gobware.NewHandlerAdapter(http.DefaultServeMux, config) //***
-	http.ListenAndServe(":6200", handler) //***
+	log.Fatal(http.ListenAndServe(":6200", handler)) //***
 
 	//http.ListenAndServeTLS(":6200", certFile, keyFile, handler)
 }
@@ -61,13 +62,13 @@ func requestToken(w http.ResponseWriter, r *http.Request){
 
 	token, err := gobware.NewToken("someUserId", data)
 
-	if err != nil {
+	if  token != nil && err != nil {
 		panic(err)
 	}
 
 	cookie := http.Cookie{
 		Name: tokenName,
-		Value: token,
+		Value: *token,
 		Expires: time.Now().Add(expirationTime),
 		HttpOnly: true,
 		Secure: true,

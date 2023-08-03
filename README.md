@@ -54,3 +54,10 @@ Steps in JWT based approach,
 1. Get the "accessToken" from the request "header".
 2. Decrypt the "accessToken" i.e the JWT, using ACCESS_TOKEN_SECRET and get the "userId" ---> (there is no DB lookup).
 3. Look up the "userId" within the shoppingCartDB to add items to cart for that userId, or display cart info for that userId.
+
+
+Future package features:
+-Caching
+-Request rate limiting
+-SSE/web socket functionality implementations
+-Pub/Sub event management

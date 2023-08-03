@@ -21,24 +21,6 @@ func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {
 
 */
 
-//var middlewareConfig MiddlewareConfig = MiddlewareConfig{}
-
-/*type MiddlewareHandlerFunc func(http.ResponseWriter, *http.Request)
-//type MiddlewareHandlerFunc func(http.HandlerFunc) (http.HandlerFunc)
-//type MiddlewareFunc func(*http.Request)
-
-func(f MiddlewareHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request){
-	//middlewareConfig.RunChain(r)
-	fmt.Println("\nLITTLE MIDDLEWARE")
-	f(w, r)
-}*/
-
-/*func(f MiddlewareFunc) handleMiddleware(r *http.Request){
-	f(r)
-}*/
-
-///////////////////////////////////////////////////////////////////
-
 // Explore example use cases of this interface and if it is needed at all
 type MiddlewareHandler interface {
 	ServeHTTP(http.ResponseWriter, *http.Request)
@@ -50,7 +32,6 @@ type HandlerAdapter struct {
 	configuration *Configuration
 }
 
-// Should func also return error?
 func NewHandlerAdapter(handler http.Handler, configuration *Configuration) *HandlerAdapter{
 	return &HandlerAdapter{
 		handler: handler,

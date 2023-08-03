@@ -3,6 +3,8 @@ package gobware
 import (
 )
 
+const NO_CONSTRAINT = "no-constraint"
+
 type ACL struct {
 	Roles map[string] Role
 }
