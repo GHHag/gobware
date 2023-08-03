@@ -42,22 +42,34 @@ func main(){
 	config := createSecurityChain(ACL)
 
 	// Request that creates token (ex user login in application context)
-	http.HandleFunc("/request-token", requestToken)	
+	http.HandleFunc("/request-token", requestToken)
 
-	// Request that requires valid token (ex get some private user data in application context)
-	http.HandleFunc("/request-resource", requestResource)	
+	//http.HandleFunc("/request-resource", requestResource)
+	http.HandleFunc("/request-resource", gobware.CheckToken(requestResource, config))
 	
-	http.HandleFunc("/request-another-resource", requestAnotherResource)	
-
+	http.HandleFunc("/request-another-resource", requestAnotherResource)
+	
 	handler := gobware.NewHandlerAdapter(http.DefaultServeMux, config) //***
 	log.Fatal(http.ListenAndServe(":6200", handler)) //***
-
+	
 	//http.ListenAndServeTLS(":6200", certFile, keyFile, handler)
+
+	//handler := http.DefaultServeMux
+	//handler := http.NewServeMux()
+	//http.Handle("/request-token", gobware.Adapt(handler, gobware.Notify()))	
+	//http.Handle("/request-resource", gobware.Adapt(handler, gobware.CheckToken(config)))	
+	//http.Handle("/request-token", gobware.Notify()(handler))	
+	//http.Handle("/request-token", gobware.Notify(handler))
+	//http.HandleFunc("/request-token", gobware.Notify(handler, requestToken))	
+	//http.Handle("/request-token", gobware.Notify(handler)(requestToken))	
+	//http.Handle("/request-resource", gobware.CheckToken(config)(handler))	
+	//log.Fatal(http.ListenAndServe(":6200", handler))
 }
 
 func requestToken(w http.ResponseWriter, r *http.Request){
 	data := map[string] string{
 		roleKey: "user",
+		//roleKey: gobware.NO_CONSTRAINT,
 	}
 
 	token, err := gobware.NewToken("someUserId", data)

@@ -8,9 +8,10 @@ import (
 )
 
 var secret = "SECRET"
+var salt = "SALT"
 
 type Token struct {
-	UserId string `json:"userId"`
+	Id string `json:"userId"`
 	Data map[string] string `json:"data"`
 }
 
@@ -61,13 +62,13 @@ func(signedToken *signedToken) decode(encodedSignedToken string) error {
 }
 
 func(signedToken *signedToken) sign() {
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha256.New, []byte(secret + salt))
 	mac.Write([]byte(signedToken.Data))
 	signedToken.Signature = []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
 }
 
 func(signedToken *signedToken) verify() bool {
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha256.New, []byte(secret + salt))
 	mac.Write(signedToken.Data)
 
 	expected := []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
@@ -77,7 +78,7 @@ func(signedToken *signedToken) verify() bool {
 
 func NewToken(userId string, data map[string] string) (*string, error) {
 	token := Token{
-		UserId: userId,
+		Id: userId,
 		Data: data,
 	}
 

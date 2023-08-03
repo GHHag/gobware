@@ -41,10 +41,11 @@ func NewHandlerAdapter(handler http.Handler, configuration *Configuration) *Hand
 
 // Should func also return error?
 func(h *HandlerAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request){
-	pass := h.runMiddleware(r)
+	h.handler.ServeHTTP(w, r)
+	/*pass := h.runMiddleware(r)
 	if pass {
 		h.handler.ServeHTTP(w, r)
-	}
+	}*/
 }
 
 // Should func also return error?
