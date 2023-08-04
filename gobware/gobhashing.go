@@ -22,6 +22,9 @@ Verifying:
 
 */
 
+// Define a struct type that implements better abstractions for hashing
+// algorithms?
+
 type Algorithm func([]byte) [32]byte
 
 func GenerateSalt(length int) ([]byte, error) {

@@ -3,16 +3,16 @@
 Gobware is a powerful software package implemented in GO, designed to simplify and enhance web development tasks. It provides a comprehensive set of tools and functionalities to strengthen the security and access control of web applications.
 
 Features
-1. Web Token Security
+1. Web Token Security  
 Gobware includes robust web token security mechanisms. Tokens are used to securely transmit information between parties as JSON objects, providing a stateless and secure way of handling user authentication and authorization. It enables secure and reliable user sessions without the need for server-side storage.
 
-2. Access Control Lists (ACL)
+2. Access Control Lists (ACL)  
 With built-in Access Control Lists, Gobware enables fine-grained control over user access to various resources and actions within the web application. Administrators can define access rules based on roles and permissions, ensuring that each user has appropriate access privileges.
 
-3. Rate Limiting and Throttling
+3. Rate Limiting and Throttling  
 Gobware offers rate limiting and throttling capabilities to control the rate of incoming requests from clients. This helps prevent abuse and potential Denial-of-Service (DoS) attacks by restricting the number of requests per client within a specified time frame.
 
-4. Secure Password Hashing
+4. Secure Password Hashing  
 
 Getting Started
 To start using Gobware in your GO web application, follow these simple steps:

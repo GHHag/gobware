@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"crypto/hmac"
 	"crypto/sha256"
+	"net/http"
 )
 
 var secret, _ = GenerateSalt(32)
@@ -12,7 +13,7 @@ var salt, _ = GenerateSalt(32)
 
 // Create a Cookie wrapper type based on http.Cookie?
 type CookieWrapper struct {
-
+	cookie http.Cookie
 }
 
 type Token struct {

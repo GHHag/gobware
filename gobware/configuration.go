@@ -14,9 +14,6 @@ the token in a ChainLink?
 */
 
 type ChainLink func(*http.Request) bool
-// Change signature of ChainLink functions if adapter should be implemented
-// another way.
-//type ChainLink func(http.Handler) http.Handler
 
 type Configuration struct {
 	chain []ChainLink
@@ -25,7 +22,7 @@ type Configuration struct {
 	tokenKey string
 }
 
-func NewConfiguration(ACL *ACL, roleKey string, tokenKey string) *Configuration{
+func NewConfiguration(ACL *ACL, roleKey string, tokenKey string) *Configuration {
 	return &Configuration{
 		chain: []ChainLink{},
 		accessControlList: ACL,
@@ -34,12 +31,12 @@ func NewConfiguration(ACL *ACL, roleKey string, tokenKey string) *Configuration{
 	}
 }
 
-func(config *Configuration) AddChainLink(chainLink ChainLink){
+func(config *Configuration) AddChainLink(chainLink ChainLink) {
 	config.chain = append(config.chain, chainLink)
 }
 
 // Run ChainLink functions concurrent?
-func(config *Configuration) RunChain(r *http.Request) bool{
+func(config *Configuration) RunChain(r *http.Request) bool {
 	for _, chainLink := range config.chain {
 		pass := chainLink(r)
 	
@@ -49,55 +46,4 @@ func(config *Configuration) RunChain(r *http.Request) bool{
 	}
 
 	return true
-}
-
-func(config *Configuration) CheckToken(r *http.Request) bool{
-	url := r.URL.Path
-	httpMethod := r.Method
-
-	cookie, err := r.Cookie(config.tokenKey)
-	if err != nil {
-		access := config.accessControlList.CheckAccess(
-			NO_CONSTRAINT, url, httpMethod,
-		)
-		return access
-	}	
-
-	var verified bool
-	verified, _, err = VerifyToken(cookie.Value)
-
-	return verified
-}
-
-func(config *Configuration) CheckAuthorization(r *http.Request) bool{
-	url := r.URL.Path
-	httpMethod := r.Method
-
-	cookie, err := r.Cookie(config.tokenKey)
-	if err != nil {
-		access := config.accessControlList.CheckAccess(
-			NO_CONSTRAINT, url, httpMethod,
-		)
-		return access
-	}	
-
-	var verified bool
-	var token *Token
-	verified, token, err = VerifyToken(cookie.Value)
-	if !verified || err != nil {
-		return false
-	}
-
-	access := config.accessControlList.CheckAccess(
-		token.Data[config.roleKey], url, httpMethod,
-	)
-
-	return access
-}
-
-func(config *Configuration) EventSubscribe (r *http.Request) bool{
-	// Some event subscription function
-	// Perhaps should not be defined as a method of the Configuration type?
-
-	return false
 }
