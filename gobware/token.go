@@ -7,11 +7,17 @@ import (
 	"crypto/sha256"
 )
 
-var secret = "SECRET"
-var salt = "SALT"
+var secret, _ = GenerateSalt(32)
+var salt, _ = GenerateSalt(32)
+
+// Create a Cookie wrapper type based on http.Cookie?
+type CookieWrapper struct {
+
+}
 
 type Token struct {
 	Id string `json:"userId"`
+	//expirationTime time Should this be included?
 	Data map[string] string `json:"data"`
 }
 
@@ -62,13 +68,13 @@ func(signedToken *signedToken) decode(encodedSignedToken string) error {
 }
 
 func(signedToken *signedToken) sign() {
-	mac := hmac.New(sha256.New, []byte(secret + salt))
+	mac := hmac.New(sha256.New, append(secret, salt...))
 	mac.Write([]byte(signedToken.Data))
 	signedToken.Signature = []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
 }
 
 func(signedToken *signedToken) verify() bool {
-	mac := hmac.New(sha256.New, []byte(secret + salt))
+	mac := hmac.New(sha256.New, append(secret, salt...))
 	mac.Write(signedToken.Data)
 
 	expected := []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
@@ -114,13 +120,3 @@ func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
 
 	return check, &decodedToken, nil
 }
-
-/*func(token Token) Validate(algo TokenAlgorithm)(Token){
-	algo.Decrypt(&token)
-
-	return token
-}
-
-func(token Token) Verify(config Configuration, w http.ResponseWriter, r *http.Request){
-	config.RunChain(&token, w, r)
-}*/

@@ -4,12 +4,13 @@ import(
 	"net/http"
 	"log"
 	"time"
+	"crypto/sha256"
+	"fmt"
 	"github.com/GHHag/gobware.git/gobware"
 )
 
 // "ENV" VARIABLES
-//var secret string = "SECRET" // secret is defined in token.go, should be env var
-var salt string = "SALT"
+var pepper string = "le pepper"
 var tokenName string = "auth"
 var expirationTime time.Duration = time.Hour
 var roleKey string = "userRole"
@@ -37,6 +38,8 @@ func createSecurityChain(ACL *gobware.ACL) (*gobware.Configuration){
 }
 
 func main(){
+	secretizeData()
+
 	// User defined types: gobware.ACL, gobware.Configuration
 	ACL := createACLRules()
 	config := createSecurityChain(ACL)
@@ -53,17 +56,6 @@ func main(){
 	log.Fatal(http.ListenAndServe(":6200", handler)) //***
 	
 	//http.ListenAndServeTLS(":6200", certFile, keyFile, handler)
-
-	//handler := http.DefaultServeMux
-	//handler := http.NewServeMux()
-	//http.Handle("/request-token", gobware.Adapt(handler, gobware.Notify()))	
-	//http.Handle("/request-resource", gobware.Adapt(handler, gobware.CheckToken(config)))	
-	//http.Handle("/request-token", gobware.Notify()(handler))	
-	//http.Handle("/request-token", gobware.Notify(handler))
-	//http.HandleFunc("/request-token", gobware.Notify(handler, requestToken))	
-	//http.Handle("/request-token", gobware.Notify(handler)(requestToken))	
-	//http.Handle("/request-resource", gobware.CheckToken(config)(handler))	
-	//log.Fatal(http.ListenAndServe(":6200", handler))
 }
 
 func requestToken(w http.ResponseWriter, r *http.Request){
@@ -98,4 +90,23 @@ func requestResource(w http.ResponseWriter, r *http.Request){
 
 func requestAnotherResource(w http.ResponseWriter, r *http.Request){
 	w.Write([]byte("Another resource"))
+}
+
+func secretizeData(){
+	algo := sha256.Sum256
+	data := "secret data"
+	secretData := []byte(data)
+	salt, err := gobware.GenerateSalt(32)
+	if err != nil {
+		panic(err)
+	}
+	hash := gobware.HashData(algo, secretData, salt, []byte(pepper))
+
+	fmt.Println(hash)
+	fmt.Println(gobware.VerifyData(algo, hash, salt, []byte("pepper"), []byte(data)))
+	fmt.Println(gobware.VerifyData(algo, hash, salt, []byte(pepper), []byte("")))
+	fmt.Println(gobware.VerifyData(algo, hash, salt, []byte(pepper), []byte("secretdata")))
+	fmt.Println(gobware.VerifyData(algo, hash, salt, []byte(pepper), []byte("secret data")))
+	fmt.Println(gobware.VerifyData(algo, hash, salt, []byte("le pepper"), []byte("secret data")))
+	fmt.Println(gobware.VerifyData(algo, hash, salt, []byte(pepper), []byte(data)))
 }

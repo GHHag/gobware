@@ -5,7 +5,6 @@ import(
 	"net/http"
 )
 
-type Adapter func(http.Handler) http.Handler
 //type Adapter func(func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request)
 
 func CheckToken(f func(http.ResponseWriter, *http.Request), config *Configuration) func(http.ResponseWriter, *http.Request){
@@ -43,6 +42,9 @@ func Notify(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter
 		f(w, r)
 	}
 }
+
+type Adapter func(http.Handler) http.Handler
+
 /*func Notify(h http.Handler, f func(http.ResponseWriter, *http.Request)) http.Handler{
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	  	fmt.Println("Notify")
