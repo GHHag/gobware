@@ -6,6 +6,7 @@ import(
 )
 
 //type Adapter func(func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request)
+type Adapter func(http.HandlerFunc) http.HandlerFunc
 
 func CheckToken(f func(http.ResponseWriter, *http.Request), config *Configuration) func(http.ResponseWriter, *http.Request){
 	return func(w http.ResponseWriter, r *http.Request){
@@ -36,14 +37,25 @@ func CheckToken(f func(http.ResponseWriter, *http.Request), config *Configuratio
 	}
 }
 
-func Notify(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request){
+//func Notify(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request){
+/*func Notify(f http.HandlerFunc) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request){
 		fmt.Println("Notify")
 		f(w, r)
+		//h.ServeHTTP(w, r)
+	}
+}*/
+func Notify() Adapter{
+	return func(f http.HandlerFunc) http.HandlerFunc{
+		return func(w http.ResponseWriter, r *http.Request){
+			fmt.Println("Notify")
+			f(w, r)
+			//h.ServeHTTP(w, r)
+		}
 	}
 }
 
-type Adapter func(http.Handler) http.Handler
+//type Adapter func(http.Handler) http.Handler
 
 /*func Notify(h http.Handler, f func(http.ResponseWriter, *http.Request)) http.Handler{
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -61,10 +73,10 @@ type Adapter func(http.Handler) http.Handler
   }
 }*/
 
-func Adapt(h http.Handler, adapters ...Adapter) http.Handler{
+/*func Adapt(h http.Handler, adapters ...Adapter) http.Handler{
 	for _, adapter := range adapters {
 		h = adapter(h)
 	}
 
 	return h
-}
+}*/

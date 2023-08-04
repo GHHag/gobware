@@ -45,7 +45,9 @@ func main(){
 	config := createSecurityChain(ACL)
 
 	// Request that creates token (ex user login in application context)
-	http.HandleFunc("/request-token", requestToken)
+	//http.HandleFunc("/request-token", requestToken)
+	//http.HandleFunc("/request-token", gobware.Notify(requestToken))
+	http.HandleFunc("/request-token", gobware.Notify()(requestToken))
 
 	//http.HandleFunc("/request-resource", requestResource)
 	http.HandleFunc("/request-resource", gobware.CheckToken(requestResource, config))
