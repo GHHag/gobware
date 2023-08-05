@@ -22,12 +22,12 @@ type Configuration struct {
 	tokenKey string
 }
 
-func NewConfiguration(ACL *ACL, roleKey string, tokenKey string) *Configuration {
+func NewConfiguration(ACL *ACL, roleKey string) *Configuration {
 	return &Configuration{
 		chain: []ChainLink{},
 		accessControlList: ACL,
 		roleKey: roleKey,
-		tokenKey: tokenKey,
+		tokenKey: CookieBaker.tokenKey,
 	}
 }
 
