@@ -6,7 +6,7 @@ import(
 	"time"
 	"crypto/sha256"
 	"fmt"
-	"github.com/GHHag/gobware.git/gobware"
+	"github.com/GHHag/gobware"
 )
 
 // "ENV" VARIABLES
