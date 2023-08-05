@@ -12,7 +12,7 @@ import(
 // "ENV" VARIABLES
 var pepper string = "le pepper"
 var tokenName string = "auth"
-var expirationTime time.Duration = time.Hour
+var tokenDuration time.Duration = time.Hour
 var roleKey string = "userRole"
 
 // Move to file/template that configurates package settings
@@ -28,15 +28,25 @@ func createACLRules() (*gobware.ACL) {
 	return ACL
 }
 
+func createToken(r *http.Request, expiration time.Time, createToken gobware.CreateToken) (*string, error) {
+	id := r.URL.Query().Get("id")
+	data := map[string] string{
+		roleKey: "user",
+	}
+
+	token, err := createToken(id, expiration, data)
+
+	return token, err
+}
+
 func main() {
 	//secretizeData()
 
-	// User defined types: gobware.ACL, gobware.Configuration
 	ACL := createACLRules()
 	config := gobware.NewConfiguration(ACL, roleKey, tokenName)
 
 	// Request that creates token (ex user login in application context)
-	http.HandleFunc("/request-token", gobware.GenerateToken(config)(requestToken))
+	http.HandleFunc("/request-token", gobware.GenerateToken(createToken, tokenDuration, config)(requestToken))
 
 	http.HandleFunc("/request-resource", gobware.CheckAccess(config)(requestResource))
 	/*http.HandleFunc("/request-resource", gobware.Adapt(

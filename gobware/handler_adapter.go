@@ -28,27 +28,19 @@ calling the HandlerFunc.
 
 type HandlerFuncAdapter func(http.HandlerFunc) http.HandlerFunc
 
-func GenerateToken(config *Configuration) HandlerFuncAdapter {
+func GenerateToken(requestToken RequestToken, duration time.Duration, config *Configuration) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			token, err := NewToken("someUserId", map[string] string {
-				config.roleKey: "user",
-			})
+			expires := time.Now().Add(duration)
 
+			token, err := requestToken(r, expires, NewToken)
 			if  token != nil && err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			cookie := http.Cookie{
-				Name: config.tokenKey,
-				Value: *token,
-				Expires: time.Now().Add(time.Hour),
-				HttpOnly: true,
-				Secure: true,
-				SameSite: http.SameSiteStrictMode, // What is this?
-			}
-			http.SetCookie(w, &cookie)
+			cookie := CookieBaker.BakeCookie(token, expires)
+			http.SetCookie(w, cookie)
 
 			hf(w, r)
 		}

@@ -5,20 +5,40 @@ import (
 	"encoding/json"
 	"crypto/hmac"
 	"crypto/sha256"
+	"time"
 	"net/http"
 )
 
 var secret, _ = GenerateSalt(32)
 var salt, _ = GenerateSalt(32)
 
-// Create a Cookie wrapper type based on http.Cookie?
-type CookieWrapper struct {
-	cookie http.Cookie
+var CookieBaker = CookieBakery {
+	tokenKey: "auth",
+	duration: time.Hour,
 }
 
+type CookieBakery struct {
+	tokenKey string
+	duration time.Duration
+}
+
+func(cookieBakery *CookieBakery) BakeCookie(value *string, expires time.Time) *http.Cookie {
+	return &http.Cookie {
+		Name: cookieBakery.tokenKey,
+		Value: *value,
+		Expires: expires,
+		HttpOnly: true,
+		Secure: true,
+		SameSite: http.SameSiteStrictMode, // What is this?
+	}
+}
+
+type RequestToken func(*http.Request, time.Time, CreateToken) (*string, error)
+type CreateToken func(string, time.Time, map[string] string) (*string, error)
+
 type Token struct {
-	Id string `json:"userId"`
-	//expirationTime time Should this be included?
+	Id string `json:"id"`
+	Expires time.Time
 	Data map[string] string `json:"data"`
 }
 
@@ -38,6 +58,11 @@ func(token *Token) decode(encodedToken []byte) error {
 	}
 	
 	return nil
+}
+
+func(token *Token) checkExpiration() bool {
+	//return token.Expiration < time.Now()
+	return true
 }
 
 type signedToken struct {
@@ -83,9 +108,10 @@ func(signedToken *signedToken) verify() bool {
 	return hmac.Equal(signedToken.Signature, expected)
 }
 
-func NewToken(userId string, data map[string] string) (*string, error) {
+func NewToken(id string, expires time.Time, data map[string] string) (*string, error) {
 	token := Token{
-		Id: userId,
+		Id: id,
+		Expires: expires,
 		Data: data,
 	}
 
