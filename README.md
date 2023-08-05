@@ -1,6 +1,6 @@
 # gobware
 
-Gobware is a powerful software package implemented in GO, designed to simplify and enhance web development tasks. It provides a comprehensive set of tools and functionalities to strengthen the security and access control of web applications.
+Gobware is a software package implemented in GO, designed to simplify and enhance web development tasks. It provides a set of tools and functionalities to strengthen the security and access control of web applications.
 
 Features
 1. Web Token Security  
@@ -33,7 +33,7 @@ This README file is a high-level description of the Gobware package, outlining i
 
 ---
 
-Future package features:
+Future package features may include the following:  
 Caching
 
 Request rate limiting
