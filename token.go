@@ -36,6 +36,7 @@ func(cookieBakery *CookieBakery) BakeCookie(value *string, expires time.Time) *h
 type RequestToken func(*http.Request, time.Time, CreateToken) (*string, error)
 type CreateToken func(string, time.Time, map[string] string) (*string, error)
 
+// Refreshtoken?
 type Token struct {
 	Id string `json:"id"`
 	Expires time.Time
