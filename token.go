@@ -7,13 +7,11 @@ import (
 	"crypto/sha256"
 	"time"
 	"net/http"
+	"os"
 )
 
-var secret, _ = GenerateSalt(32)
-var salt, _ = GenerateSalt(32)
-
 var CookieBaker = CookieBakery {
-	tokenKey: "auth",
+	tokenKey: "auth", // Make this an env var or define it somewhere else.
 	duration: time.Hour,
 }
 
@@ -61,11 +59,6 @@ func(token *Token) decode(encodedToken []byte) error {
 	return nil
 }
 
-func(token *Token) checkExpiration() bool {
-	//return token.Expiration < time.Now()
-	return true
-}
-
 type signedToken struct {
 	Signature []byte `json:"signature"`
 	Data []byte `json:"data"`
@@ -95,13 +88,13 @@ func(signedToken *signedToken) decode(encodedSignedToken string) error {
 }
 
 func(signedToken *signedToken) sign() {
-	mac := hmac.New(sha256.New, append(secret, salt...))
+	mac := hmac.New(sha256.New, []byte(os.Getenv(SecretKey) + os.Getenv(SaltKey)))
 	mac.Write([]byte(signedToken.Data))
 	signedToken.Signature = []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
 }
 
 func(signedToken *signedToken) verify() bool {
-	mac := hmac.New(sha256.New, append(secret, salt...))
+	mac := hmac.New(sha256.New, []byte(os.Getenv(SecretKey) + os.Getenv(SaltKey)))
 	mac.Write(signedToken.Data)
 
 	expected := []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
@@ -146,5 +139,7 @@ func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
 	var decodedToken Token
 	decodedToken.decode(decodedSignedToken.Data)
 
-	return check, &decodedToken, nil
+	expired := decodedToken.Expires.Compare(time.Now()) < 0
+
+	return check && !expired, &decodedToken, nil
 }
