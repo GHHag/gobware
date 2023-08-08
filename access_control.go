@@ -1,36 +1,31 @@
 package gobware
 
-import (
-)
-
-const NO_CONSTRAINT = "no-constraint"
-
 type ACL struct {
-	Roles map[string] Role
+	roles map[string] Role
 }
 
 type Role struct {
-	Routes map[string] Route
+	routes map[string] Route
 }
 
 type Route struct {
-	HttpMethods map[string] bool
+	httpMethods map[string] bool
 }
 
 func NewACL() (*ACL){
 	return &ACL{
-		Roles: make(map[string] Role),
+		roles: make(map[string] Role),
 	}
 }
 
 // Change order of how ACL is composed to avoid redundant stuff?
 func(acl *ACL) AddACLRule(role string, route string, httpMethods []string){
-	_, ok := acl.Roles[role]
+	_, ok := acl.roles[role]
 	if !ok {
 		acl.addACLRole(role)
 	}
 
-	_, ok = acl.Roles[role].Routes[route]
+	_, ok = acl.roles[role].routes[route]
 	if !ok {
 		acl.addACLRoute(role, route)
 	}
@@ -39,28 +34,28 @@ func(acl *ACL) AddACLRule(role string, route string, httpMethods []string){
 }
 
 func(acl *ACL) addACLRole(role string){
-	_, ok := acl.Roles[role]
+	_, ok := acl.roles[role]
 	if !ok {
-		acl.Roles[role] = Role{
-			Routes: make(map[string] Route),
+		acl.roles[role] = Role{
+			routes: make(map[string] Route),
 		}
 	}
 }
 
 func(acl *ACL) addACLRoute(role string, route string){
-	_, ok := acl.Roles[role].Routes[route]
+	_, ok := acl.roles[role].routes[route]
 	if !ok {
-		acl.Roles[role].Routes[route] = Route{
-			HttpMethods: make(map[string] bool),
+		acl.roles[role].routes[route] = Route{
+			httpMethods: make(map[string] bool),
 		}
 	}
 }
 
 func(acl *ACL) addACLMethods(role string, route string, httpMethods []string){
 	for _, httpMethod := range httpMethods {
-		_, ok := acl.Roles[role].Routes[route].HttpMethods[httpMethod]
+		_, ok := acl.roles[role].routes[route].httpMethods[httpMethod]
 		if !ok {
-			acl.Roles[role].Routes[route].HttpMethods[httpMethod] = true
+			acl.roles[role].routes[route].httpMethods[httpMethod] = true
 		}
 	}
 }
@@ -73,5 +68,5 @@ func(acl *ACL) AddCustomRule(function func(), data interface{}){
 }
 
 func(acl *ACL) CheckAccess(role string, route string, httpMethod string) bool{
-	return acl.Roles[role].Routes[route].HttpMethods[httpMethod]
+	return acl.roles[role].routes[route].httpMethods[httpMethod]
 }
