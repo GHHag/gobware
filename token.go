@@ -1,6 +1,7 @@
 package gobware
 
 import (
+	"fmt"
 	"encoding/base64"
 	"encoding/json"
 	"crypto/hmac"
@@ -31,14 +32,16 @@ func(cookieBakery *CookieBakery) BakeCookie(value *string, expires time.Time) *h
 	}
 }
 
+type CreateToken func(time.Time, map[string] string) (*string, error)
 type RequestToken func(*http.Request, time.Time, CreateToken) (*string, error)
-type CreateToken func(string, time.Time, map[string] string) (*string, error)
+type CreateTokenPair func(time.Time, map[string] string) (*string, *string, error)
+type RequestTokenPair func(*http.Request, time.Time, CreateTokenPair) (*string, *string, error)
 
-// Refreshtoken?
 type Token struct {
 	Id string `json:"id"`
 	Expires time.Time
 	Data map[string] string `json:"data"`
+	RefreshToken bool
 }
 
 func(token *Token) encode() ([]byte, error) {
@@ -102,9 +105,12 @@ func(signedToken *signedToken) verify() bool {
 	return hmac.Equal(signedToken.Signature, expected)
 }
 
-func NewToken(id string, expires time.Time, data map[string] string) (*string, error) {
+func NewToken(expires time.Time, data map[string] string) (*string, error) {
+	id, _ := GenerateId(256)
+	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(SaltKey)), []byte(os.Getenv(SecretKey)))
+
 	token := Token{
-		Id: id,
+		Id: base64.StdEncoding.EncodeToString(idHash),
 		Expires: expires,
 		Data: data,
 	}
@@ -116,7 +122,64 @@ func NewToken(id string, expires time.Time, data map[string] string) (*string, e
 	if err != nil {
 		return nil, err
 	}
+	signedToken.sign()
 
+	encodedSignedToken, err := signedToken.encode()
+	if err != nil {
+		return nil, err
+	}
+
+	return &encodedSignedToken, nil
+}
+
+func NewTokenPair(expires time.Time, data map[string] string) (*string, *string, error) {
+	id, _ := GenerateId(256)
+	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(SaltKey)), []byte(os.Getenv(SecretKey)))
+	encodedId := base64.StdEncoding.EncodeToString(idHash)
+
+	token := Token{
+		// Auto generate UUID, use same id for refresh token and use it to sign and verify
+		// that access and refresh tokens are paired with each other
+		Id: encodedId, // Salt and encrypt/sign id?
+		Expires: expires,
+		Data: data,
+	}
+	fmt.Println(token)
+
+	var err error
+
+	signedToken := signedToken{}
+	signedToken.Data, err = token.encode()
+	if err != nil {
+		return nil, nil, err
+	}
+	signedToken.sign()
+
+	encodedSignedToken, err := signedToken.encode()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	refreshToken, err := newRefreshToken(encodedId, expires)
+
+	return &encodedSignedToken, refreshToken, nil
+}
+
+func newRefreshToken(id string, expires time.Time) (*string, error) {
+	token := Token{
+		Id: id,
+		Expires: expires.Add(time.Hour * 24),
+		RefreshToken: true,
+	}
+	fmt.Println(token)
+
+	var err error
+
+	signedToken := signedToken{}
+	signedToken.Data, err = token.encode()
+	if err != nil {
+		return nil, err
+	}
 	signedToken.sign()
 
 	encodedSignedToken, err := signedToken.encode()
@@ -128,18 +191,30 @@ func NewToken(id string, expires time.Time, data map[string] string) (*string, e
 }
 
 func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
-	decodedSignedToken := signedToken{}
+	decodedSignedToken := signedToken {}
 
 	err := decodedSignedToken.decode(encodedSignedToken)
 	if err != nil {
 		return false, nil, err
 	}
 
-	check := decodedSignedToken.verify()
+	verified := decodedSignedToken.verify()
 	var decodedToken Token
 	decodedToken.decode(decodedSignedToken.Data)
 
 	expired := decodedToken.Expires.Compare(time.Now()) < 0
 
-	return check && !expired, &decodedToken, nil
+	return verified && !expired, &decodedToken, nil
+}
+
+func VerifyTokenId(encodedSignedToken string, id string) (bool, *Token, error) {
+	verified, token, err := VerifyToken(encodedSignedToken)
+
+	if !verified || err != nil {
+		return false, nil, err
+	}
+
+	// Id's should be signed and encrypted, and therefore needed
+	// to be encrypted and matched here before returning.
+	return verified && token.Id == id, token, err
 }

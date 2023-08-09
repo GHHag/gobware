@@ -33,6 +33,12 @@ func GenerateSalt(length int) ([]byte, error) {
 	return salt, err
 }
 
+func GenerateId(length int) ([]byte, error) {
+	id := make([]byte, length)
+	_, err := rand.Read(id)
+	return id, err
+}
+
 func HashData(algorithm Algorithm, data []byte, salt []byte, pepper []byte) []byte {
 	saltAndPepper := append(salt, pepper...)
 	hash := algorithm(append(data, saltAndPepper...))

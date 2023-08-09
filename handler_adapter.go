@@ -47,6 +47,26 @@ func GenerateToken(requestToken RequestToken, duration time.Duration, config *Co
 	}
 }
 
+func GenerateTokenPair(requestTokenPair RequestTokenPair, duration time.Duration, config *Configuration) HandlerFuncAdapter {
+	return func(hf http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			expires := time.Now().Add(duration)
+
+			//token, refreshToken, err := requestTokenPair(r, expires, NewTokenPair)
+			token, _, err := requestTokenPair(r, expires, NewTokenPair)
+			if  token != nil && err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			cookie := CookieBaker.BakeCookie(token, expires)
+			http.SetCookie(w, cookie)
+
+			hf(w, r)
+		}
+	}
+}
+
 func CheckToken(config *Configuration) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +77,7 @@ func CheckToken(config *Configuration) HandlerFuncAdapter {
 			}	
 
 			var verified bool
-			verified, _, err = VerifyToken(cookie.Value)
+			verified, _, err = VerifyToken(cookie.Value) // Create new function to enable verification that token id maches user id
 			if !verified {
 				w.WriteHeader(http.StatusForbidden)
 				return
