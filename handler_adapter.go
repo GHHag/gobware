@@ -3,6 +3,7 @@ package gobware
 import(
 	"net/http"
 	"time"
+	"fmt"
 )
 
 /*
@@ -39,8 +40,7 @@ func GenerateToken(requestToken RequestToken, duration time.Duration, config *Co
 				return
 			}
 
-			cookie := CookieBaker.BakeCookie(token, expires)
-			http.SetCookie(w, cookie)
+			http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.accessTokenKey, token, expires))
 
 			hf(w, r)
 		}
@@ -52,15 +52,15 @@ func GenerateTokenPair(requestTokenPair RequestTokenPair, duration time.Duration
 		return func(w http.ResponseWriter, r *http.Request) {
 			expires := time.Now().Add(duration)
 
-			//token, refreshToken, err := requestTokenPair(r, expires, NewTokenPair)
-			token, _, err := requestTokenPair(r, expires, NewTokenPair)
+			token, refreshToken, err := requestTokenPair(r, expires, NewTokenPair)
 			if  token != nil && err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			cookie := CookieBaker.BakeCookie(token, expires)
-			http.SetCookie(w, cookie)
+			http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.accessTokenKey, token, expires))
+			// cookie expires velue need to match the value of the expires field in token
+			http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.refreshTokenKey, refreshToken, expires))
 
 			hf(w, r)
 		}
@@ -70,15 +70,25 @@ func GenerateTokenPair(requestTokenPair RequestTokenPair, duration time.Duration
 func CheckToken(config *Configuration) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cookie, err := r.Cookie(config.tokenKey)
+			accessCookie, err := r.Cookie(config.accessTokenKey)
 			if err != nil {
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}	
 
+			refreshCookie, _ := r.Cookie(config.refreshTokenKey)
+			x, y, z := ExchangeTokens(accessCookie.Value, refreshCookie.Value)
+			fmt.Println(x)
+			fmt.Println(y)
+			fmt.Println(z)
+
 			var verified bool
-			verified, _, err = VerifyToken(cookie.Value) // Create new function to enable verification that token id maches user id
+			verified, _, err = VerifyToken(accessCookie.Value) // Create new function to enable verification that token id maches user id
 			if !verified {
+				// If access token was expired check if refreshtoken is available
+				// and if so exchange tokens
+				//ExchangeTokens(accessCookie.Value, refreshCookie.Value)
+
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
@@ -94,7 +104,7 @@ func CheckAccess(config *Configuration) HandlerFuncAdapter {
 			url := r.URL.Path
 			httpMethod := r.Method
 
-			cookie, err := r.Cookie(config.tokenKey)
+			accessCookie, err := r.Cookie(config.accessTokenKey)
 			if err != nil {
 				w.WriteHeader(http.StatusForbidden)
 				return
@@ -102,7 +112,7 @@ func CheckAccess(config *Configuration) HandlerFuncAdapter {
 
 			var verified bool
 			var token *Token
-			verified, token, err = VerifyToken(cookie.Value)
+			verified, token, err = VerifyToken(accessCookie.Value)
 			if !verified || err != nil {
 				w.WriteHeader(http.StatusForbidden)
 				return

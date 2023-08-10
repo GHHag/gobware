@@ -2,6 +2,7 @@ package gobware
 
 import (
 	"fmt"
+	"errors"
 	"encoding/base64"
 	"encoding/json"
 	"crypto/hmac"
@@ -12,23 +13,25 @@ import (
 )
 
 var CookieBaker = CookieBakery {
-	tokenKey: "auth", // Make this an env var or define it somewhere else.
+	accessTokenKey: "access", // Make this an env var or define it somewhere else.
+	refreshTokenKey: "refresh", // Make this an env var or define it somewhere else.
 	duration: time.Hour,
 }
 
 type CookieBakery struct {
-	tokenKey string
+	accessTokenKey string
+	refreshTokenKey string
 	duration time.Duration
 }
 
-func(cookieBakery *CookieBakery) BakeCookie(value *string, expires time.Time) *http.Cookie {
+func(cookieBakery *CookieBakery) BakeCookie(name string, value *string, expires time.Time) *http.Cookie {
 	return &http.Cookie {
-		Name: cookieBakery.tokenKey,
+		Name: name,
 		Value: *value,
 		Expires: expires,
 		HttpOnly: true,
 		Secure: true,
-		SameSite: http.SameSiteStrictMode, // What is this?
+		SameSite: http.SameSiteStrictMode,
 	}
 }
 
@@ -107,10 +110,9 @@ func(signedToken *signedToken) verify() bool {
 
 func NewToken(expires time.Time, data map[string] string) (*string, error) {
 	id, _ := GenerateId(256)
-	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(SaltKey)), []byte(os.Getenv(SecretKey)))
 
 	token := Token{
-		Id: base64.StdEncoding.EncodeToString(idHash),
+		Id: base64.StdEncoding.EncodeToString(id),
 		Expires: expires,
 		Data: data,
 	}
@@ -135,16 +137,12 @@ func NewToken(expires time.Time, data map[string] string) (*string, error) {
 func NewTokenPair(expires time.Time, data map[string] string) (*string, *string, error) {
 	id, _ := GenerateId(256)
 	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(SaltKey)), []byte(os.Getenv(SecretKey)))
-	encodedId := base64.StdEncoding.EncodeToString(idHash)
 
 	token := Token{
-		// Auto generate UUID, use same id for refresh token and use it to sign and verify
-		// that access and refresh tokens are paired with each other
-		Id: encodedId, // Salt and encrypt/sign id?
+		Id: base64.StdEncoding.EncodeToString(id),
 		Expires: expires,
 		Data: data,
 	}
-	fmt.Println(token)
 
 	var err error
 
@@ -160,7 +158,7 @@ func NewTokenPair(expires time.Time, data map[string] string) (*string, *string,
 		return nil, nil, err
 	}
 
-	refreshToken, err := newRefreshToken(encodedId, expires)
+	refreshToken, err := newRefreshToken(base64.StdEncoding.EncodeToString(idHash), expires)
 
 	return &encodedSignedToken, refreshToken, nil
 }
@@ -171,7 +169,6 @@ func newRefreshToken(id string, expires time.Time) (*string, error) {
 		Expires: expires.Add(time.Hour * 24),
 		RefreshToken: true,
 	}
-	fmt.Println(token)
 
 	var err error
 
@@ -191,7 +188,7 @@ func newRefreshToken(id string, expires time.Time) (*string, error) {
 }
 
 func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
-	decodedSignedToken := signedToken {}
+	decodedSignedToken := signedToken{}
 
 	err := decodedSignedToken.decode(encodedSignedToken)
 	if err != nil {
@@ -217,4 +214,48 @@ func VerifyTokenId(encodedSignedToken string, id string) (bool, *Token, error) {
 	// Id's should be signed and encrypted, and therefore needed
 	// to be encrypted and matched here before returning.
 	return verified && token.Id == id, token, err
+}
+
+func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken string) (*string, *string, error) {
+	decodedSignedAccessToken := signedToken{}
+	decodedSignedRefreshToken := signedToken{}
+	aErr := decodedSignedAccessToken.decode(encodedSignedAccessToken)
+	rErr := decodedSignedRefreshToken.decode(encodedSignedRefreshToken)
+	if aErr != nil || rErr != nil {
+		return nil, nil, errors.New("Failed to decode tokens.")
+	}
+
+	aVerified := decodedSignedAccessToken.verify()
+	rVerified := decodedSignedRefreshToken.verify()
+	var decodedAccessToken Token
+	var decodedRefreshToken Token
+	decodedAccessToken.decode(decodedSignedAccessToken.Data)
+	decodedRefreshToken.decode(decodedSignedRefreshToken.Data)
+	if !aVerified || !rVerified {
+		return nil, nil, errors.New("Failed to verify tokens.")
+	}
+
+	expired := decodedRefreshToken.Expires.Compare(time.Now()) < 0
+	if !decodedRefreshToken.RefreshToken || expired {
+		return nil, nil, errors.New("Invalid refresh token.")
+	}
+
+	decodedAccessTokenId, _ := base64.StdEncoding.DecodeString(decodedAccessToken.Id)
+	decodedRefreshTokenId, _ := base64.StdEncoding.DecodeString(decodedRefreshToken.Id)
+	tokenPairVerified := VerifyData(
+		sha256.Sum256, decodedAccessTokenId,
+		[]byte(os.Getenv(SaltKey)), []byte(os.Getenv(SecretKey)), 
+		decodedRefreshTokenId,
+	)
+
+	// If successful return create new tokens
+	// Verify and compare hashes of token id's
+	if tokenPairVerified {
+		fmt.Println("TOKEN PAIR VERIFIED")
+	}
+	fmt.Println("access token id:", decodedAccessToken.Id)
+	fmt.Println("refresh token id:", decodedRefreshToken.Id)
+
+	// Return new tokens
+	return nil, nil, nil
 }

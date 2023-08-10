@@ -13,6 +13,7 @@ const SecretKey = "SECRET"
 const SaltKey = "SALT"
 
 // Define constand Configuration struct?
+// Allow package user to inject configuration struct?
 /*const Config Configuration {
 	roleKey: "role",
 }*/
@@ -26,8 +27,8 @@ func generateEnv() {
 	defer file.Close()
 
 	writer := bufio.NewWriter(file)
-	secret, _ := GenerateSalt(128)
-	salt, _ := GenerateSalt(128)
+	secret, _ := GenerateSalt(256)
+	salt, _ := GenerateSalt(256)
 	writer.WriteString(fmt.Sprintf("%s=%s\n", SecretKey, base64.StdEncoding.EncodeToString(secret)))
 	writer.WriteString(fmt.Sprintf("%s=%s", SaltKey, base64.StdEncoding.EncodeToString(salt)))
 
@@ -59,6 +60,8 @@ func init() {
 		}
 	}
 
+	// If "SECRET" or "SALT" is not set as env vars then generate them
+
 	if err := scanner.Err(); err != nil {
         panic(err)
     }
@@ -79,7 +82,8 @@ type Configuration struct {
 	chain []ChainLink
 	accessControlList *ACL
 	roleKey string
-	tokenKey string
+	accessTokenKey string
+	refreshTokenKey string
 }
 
 func NewConfiguration(ACL *ACL, roleKey string) *Configuration {
@@ -87,7 +91,8 @@ func NewConfiguration(ACL *ACL, roleKey string) *Configuration {
 		chain: []ChainLink{},
 		accessControlList: ACL,
 		roleKey: roleKey,
-		tokenKey: CookieBaker.tokenKey,
+		accessTokenKey: CookieBaker.accessTokenKey,
+		refreshTokenKey: CookieBaker.refreshTokenKey,
 	}
 }
 
