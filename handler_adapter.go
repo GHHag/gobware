@@ -28,10 +28,10 @@ calling the HandlerFunc.
 
 type HandlerFuncAdapter func(http.HandlerFunc) http.HandlerFunc
 
-func GenerateToken(requestToken RequestToken, duration time.Duration, config *Configuration) HandlerFuncAdapter {
+func GenerateToken(requestToken RequestToken, config *Configuration) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			expires := time.Now().Add(duration)
+			expires := time.Now().Add(config.tokenDuration)
 
 			token, err := requestToken(r, expires, NewToken)
 			if  token != nil && err != nil {
@@ -46,10 +46,10 @@ func GenerateToken(requestToken RequestToken, duration time.Duration, config *Co
 	}
 }
 
-func GenerateTokenPair(requestTokenPair RequestTokenPair, duration time.Duration, config *Configuration) HandlerFuncAdapter {
+func GenerateTokenPair(requestTokenPair RequestTokenPair, config *Configuration) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			expires := time.Now().Add(duration)
+			expires := time.Now().Add(config.tokenDuration)
 
 			token, refreshToken, err := requestTokenPair(r, expires, NewTokenPair)
 			if  token != nil && err != nil {
@@ -65,11 +65,23 @@ func GenerateTokenPair(requestTokenPair RequestTokenPair, duration time.Duration
 	}
 }
 
+// Move function to token.go?
+func AttemptTokenExchange(accessTokenCookie http.Cookie, refreshTokenCookie http.Cookie, expires time.Time) (*string, *string, error) {
+	validated, _, err := VerifyToken(refreshTokenCookie.Value)
+	if validated && err == nil {
+		accessToken, refreshToken, err := ExchangeTokens(accessTokenCookie.Value, refreshTokenCookie.Value, expires)
+
+		return accessToken, refreshToken, err
+	} else {
+		return nil, nil, err
+	}
+}
+
 func CheckToken(config *Configuration) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			accessTokenCookie, err := r.Cookie(config.accessTokenKey)
-			if err != nil {
+			if accessTokenCookie == nil || err != nil {
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
@@ -78,17 +90,20 @@ func CheckToken(config *Configuration) HandlerFuncAdapter {
 			validated, _, err = VerifyToken(accessTokenCookie.Value) // Create new function to enable verification that token belongs to user
 			if !validated || err != nil {
 				refreshTokenCookie, err := r.Cookie(config.refreshTokenKey)
-				if err == nil {
-					accessToken, refreshToken, err := ExchangeTokens(accessTokenCookie.Value, refreshTokenCookie.Value)
-					if err == nil {
-						// Replace time literals
-						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.accessTokenKey, accessToken, time.Now().Add(time.Hour)))
-						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.refreshTokenKey, refreshToken, time.Now().Add(time.Hour)))
+				if refreshTokenCookie != nil && err == nil {
+					expires := time.Now().Add(config.tokenDuration)
+					accessToken, refreshToken, err := AttemptTokenExchange(*accessTokenCookie, *refreshTokenCookie, expires)
+					if accessToken != nil && refreshToken != nil && err == nil {
+						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.accessTokenKey, accessToken, expires))
+						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.refreshTokenKey, refreshToken, expires))
+					} else {
+						w.WriteHeader(http.StatusForbidden)
+						return
 					}
+				} else{
+					w.WriteHeader(http.StatusForbidden)
+					return
 				}
-			} else {
-				w.WriteHeader(http.StatusForbidden)
-				return
 			}
 
 			hf(w, r)
@@ -108,16 +123,29 @@ func CheckAccess(config *Configuration) HandlerFuncAdapter {
 				return
 			}	
 
-			var verified bool
-			var token *Token
-			verified, token, err = VerifyToken(accessTokenCookie.Value)
-			if !verified || err != nil {
-				w.WriteHeader(http.StatusForbidden)
-				return
+			var validated bool
+			var accessToken *Token
+			validated, accessToken, err = VerifyToken(accessTokenCookie.Value)
+			if !validated || err != nil {
+				refreshTokenCookie, err := r.Cookie(config.refreshTokenKey)
+				if refreshTokenCookie != nil && err == nil {
+					expires := time.Now().Add(config.tokenDuration)
+					accessToken, refreshToken, err := AttemptTokenExchange(*accessTokenCookie, *refreshTokenCookie, expires)
+					if accessToken != nil && refreshToken != nil && err == nil {
+						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.accessTokenKey, accessToken, expires))
+						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.refreshTokenKey, refreshToken, expires))
+					} else {
+						w.WriteHeader(http.StatusForbidden)
+						return
+					}
+				} else{
+					w.WriteHeader(http.StatusForbidden)
+					return
+				}
 			}
 
 			access := config.accessControlList.CheckAccess(
-				token.Data[config.roleKey], url, httpMethod,
+				accessToken.Data[config.roleKey], url, httpMethod,
 			)
 			if !access {
 				w.WriteHeader(http.StatusForbidden)

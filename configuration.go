@@ -7,10 +7,12 @@ import (
 	"bufio"
 	"fmt"
 	"strings"
+	"time"
 )
 
 const SecretKey = "SECRET"
 const SaltKey = "SALT"
+const PepperKey = "PEPPER"
 
 // Define constand Configuration struct?
 // Allow package user to inject configuration struct?
@@ -29,8 +31,10 @@ func generateEnv() {
 	writer := bufio.NewWriter(file)
 	secret, _ := GenerateSalt(256)
 	salt, _ := GenerateSalt(256)
+	pepper, _ := GenerateSalt(256)
 	writer.WriteString(fmt.Sprintf("%s=%s\n", SecretKey, base64.StdEncoding.EncodeToString(secret)))
 	writer.WriteString(fmt.Sprintf("%s=%s", SaltKey, base64.StdEncoding.EncodeToString(salt)))
+	writer.WriteString(fmt.Sprintf("%s=%s", PepperKey, base64.StdEncoding.EncodeToString(pepper)))
 
 	err = writer.Flush()
 	if err != nil {
@@ -84,15 +88,17 @@ type Configuration struct {
 	roleKey string
 	accessTokenKey string
 	refreshTokenKey string
+	tokenDuration time.Duration
 }
 
-func NewConfiguration(ACL *ACL, roleKey string) *Configuration {
+func NewConfiguration(ACL *ACL, roleKey string, tokenDuration time.Duration) *Configuration {
 	return &Configuration{
 		chain: []ChainLink{},
 		accessControlList: ACL,
 		roleKey: roleKey,
 		accessTokenKey: CookieBaker.accessTokenKey,
 		refreshTokenKey: CookieBaker.refreshTokenKey,
+		tokenDuration: tokenDuration,
 	}
 }
 

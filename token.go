@@ -14,7 +14,7 @@ import (
 var CookieBaker = CookieBakery {
 	accessTokenKey: "access", // Make this an env var or define it somewhere else.
 	refreshTokenKey: "refresh", // Make this an env var or define it somewhere else.
-	duration: time.Hour,
+	duration: time.Hour * 24,
 }
 
 type CookieBakery struct {
@@ -27,7 +27,6 @@ func(cookieBakery *CookieBakery) BakeCookie(name string, value *string, expires 
 	return &http.Cookie {
 		Name: name,
 		Value: *value,
-		//Expires: expires,
 		Expires: expires.Add(cookieBakery.duration),
 		HttpOnly: true,
 		Secure: true,
@@ -216,7 +215,7 @@ func VerifyTokenId(encodedSignedToken string, id string) (bool, *Token, error) {
 	return verified && token.Id == id, token, err
 }
 
-func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken string) (*string, *string, error) {
+func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken string, expires time.Time) (*string, *string, error) {
 	decodedSignedAccessToken := signedToken{}
 	decodedSignedRefreshToken := signedToken{}
 	aErr := decodedSignedAccessToken.decode(encodedSignedAccessToken)
@@ -251,8 +250,6 @@ func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken s
 		return nil, nil, errors.New("Failed to verify tokens.")
 	}
 
-	// Create new tokens
-	// Add time duration field to token, aswell as having expiration time as another field
-	accessToken, refreshToken, err := NewTokenPair(decodedAccessToken.Expires, decodedAccessToken.Data)
+	accessToken, refreshToken, err := NewTokenPair(expires, decodedAccessToken.Data)
 	return accessToken, refreshToken, err
 }
