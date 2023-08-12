@@ -1,7 +1,6 @@
 package gobware
 
 import (
-	"fmt"
 	"errors"
 	"encoding/base64"
 	"encoding/json"
@@ -28,7 +27,8 @@ func(cookieBakery *CookieBakery) BakeCookie(name string, value *string, expires 
 	return &http.Cookie {
 		Name: name,
 		Value: *value,
-		Expires: expires,
+		//Expires: expires,
+		Expires: expires.Add(cookieBakery.duration),
 		HttpOnly: true,
 		Secure: true,
 		SameSite: http.SameSiteStrictMode,
@@ -247,15 +247,12 @@ func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken s
 		[]byte(os.Getenv(SaltKey)), []byte(os.Getenv(SecretKey)), 
 		decodedRefreshTokenId,
 	)
-
-	// If successful return create new tokens
-	// Verify and compare hashes of token id's
-	if tokenPairVerified {
-		fmt.Println("TOKEN PAIR VERIFIED")
+	if !tokenPairVerified {
+		return nil, nil, errors.New("Failed to verify tokens.")
 	}
-	fmt.Println("access token id:", decodedAccessToken.Id)
-	fmt.Println("refresh token id:", decodedRefreshToken.Id)
 
-	// Return new tokens
-	return nil, nil, nil
+	// Create new tokens
+	// Add time duration field to token, aswell as having expiration time as another field
+	accessToken, refreshToken, err := NewTokenPair(decodedAccessToken.Expires, decodedAccessToken.Data)
+	return accessToken, refreshToken, err
 }
