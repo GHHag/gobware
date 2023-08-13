@@ -83,7 +83,7 @@ the token in a ChainLink?
 type ChainLink func(*http.Request) bool
 
 type Configuration struct {
-	chain []ChainLink
+	//chain []ChainLink
 	accessControlList *ACL
 	roleKey string
 	accessTokenKey string
@@ -93,7 +93,7 @@ type Configuration struct {
 
 func NewConfiguration(ACL *ACL, roleKey string, tokenDuration time.Duration) *Configuration {
 	return &Configuration{
-		chain: []ChainLink{},
+		//chain: []ChainLink{},
 		accessControlList: ACL,
 		roleKey: roleKey,
 		accessTokenKey: CookieBaker.accessTokenKey,
@@ -102,7 +102,7 @@ func NewConfiguration(ACL *ACL, roleKey string, tokenDuration time.Duration) *Co
 	}
 }
 
-func(config *Configuration) AddChainLink(chainLink ChainLink) {
+/*func(config *Configuration) AddChainLink(chainLink ChainLink) {
 	config.chain = append(config.chain, chainLink)
 }
 
@@ -117,4 +117,4 @@ func(config *Configuration) RunChain(r *http.Request) bool {
 	}
 
 	return true
-}
+}*/

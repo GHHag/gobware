@@ -165,7 +165,8 @@ func NewTokenPair(expires time.Time, data map[string] string) (*string, *string,
 func newRefreshToken(id string, expires time.Time) (*string, error) {
 	token := Token{
 		Id: id,
-		Expires: expires.Add(time.Hour * 24),
+		//Expires: expires.Add(time.Hour * 24),
+		Expires: expires.Add(time.Minute * 4),
 		RefreshToken: true,
 	}
 
@@ -252,4 +253,15 @@ func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken s
 
 	accessToken, refreshToken, err := NewTokenPair(expires, decodedAccessToken.Data)
 	return accessToken, refreshToken, err
+}
+
+func AttemptTokenExchange(accessTokenCookie http.Cookie, refreshTokenCookie http.Cookie, expires time.Time) (*string, *string, error) {
+	validated, _, err := VerifyToken(refreshTokenCookie.Value)
+	if validated && err == nil {
+		accessToken, refreshToken, err := ExchangeTokens(accessTokenCookie.Value, refreshTokenCookie.Value, expires)
+
+		return accessToken, refreshToken, err
+	} else {
+		return nil, nil, err
+	}
 }

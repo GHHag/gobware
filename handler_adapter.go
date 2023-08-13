@@ -1,6 +1,7 @@
 package gobware
 
 import(
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -65,18 +66,6 @@ func GenerateTokenPair(requestTokenPair RequestTokenPair, config *Configuration)
 	}
 }
 
-// Move function to token.go?
-func AttemptTokenExchange(accessTokenCookie http.Cookie, refreshTokenCookie http.Cookie, expires time.Time) (*string, *string, error) {
-	validated, _, err := VerifyToken(refreshTokenCookie.Value)
-	if validated && err == nil {
-		accessToken, refreshToken, err := ExchangeTokens(accessTokenCookie.Value, refreshTokenCookie.Value, expires)
-
-		return accessToken, refreshToken, err
-	} else {
-		return nil, nil, err
-	}
-}
-
 func CheckToken(config *Configuration) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +90,7 @@ func CheckToken(config *Configuration) HandlerFuncAdapter {
 						return
 					}
 				} else{
+					// Remove cookies if refresh token fails validation
 					w.WriteHeader(http.StatusForbidden)
 					return
 				}
@@ -131,6 +121,9 @@ func CheckAccess(config *Configuration) HandlerFuncAdapter {
 				if refreshTokenCookie != nil && err == nil {
 					expires := time.Now().Add(config.tokenDuration)
 					accessToken, refreshToken, err := AttemptTokenExchange(*accessTokenCookie, *refreshTokenCookie, expires)
+					fmt.Println("AttemptTokenExchange called")
+					fmt.Println("accessToken:", accessToken)
+					fmt.Println("refreshToken:", refreshToken)
 					if accessToken != nil && refreshToken != nil && err == nil {
 						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.accessTokenKey, accessToken, expires))
 						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.refreshTokenKey, refreshToken, expires))
@@ -139,6 +132,7 @@ func CheckAccess(config *Configuration) HandlerFuncAdapter {
 						return
 					}
 				} else{
+					// Remove cookies if refresh token fails validation
 					w.WriteHeader(http.StatusForbidden)
 					return
 				}
@@ -147,6 +141,8 @@ func CheckAccess(config *Configuration) HandlerFuncAdapter {
 			access := config.accessControlList.CheckAccess(
 				accessToken.Data[config.roleKey], url, httpMethod,
 			)
+			fmt.Println("validated:", validated)
+			fmt.Println("access:", access)
 			if !access {
 				w.WriteHeader(http.StatusForbidden)
 				return
