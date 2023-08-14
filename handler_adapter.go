@@ -1,7 +1,6 @@
 package gobware
 
 import(
-	"fmt"
 	"net/http"
 	"time"
 )
@@ -86,11 +85,12 @@ func CheckToken(config *Configuration) HandlerFuncAdapter {
 						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.accessTokenKey, accessToken, expires))
 						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.refreshTokenKey, refreshToken, expires))
 					} else {
+						http.SetCookie(w, &http.Cookie{Name: CookieBaker.accessTokenKey, MaxAge: -1})
+						http.SetCookie(w, &http.Cookie{Name: CookieBaker.refreshTokenKey, MaxAge: -1})
 						w.WriteHeader(http.StatusForbidden)
 						return
 					}
 				} else{
-					// Remove cookies if refresh token fails validation
 					w.WriteHeader(http.StatusForbidden)
 					return
 				}
@@ -121,18 +121,16 @@ func CheckAccess(config *Configuration) HandlerFuncAdapter {
 				if refreshTokenCookie != nil && err == nil {
 					expires := time.Now().Add(config.tokenDuration)
 					accessToken, refreshToken, err := AttemptTokenExchange(*accessTokenCookie, *refreshTokenCookie, expires)
-					fmt.Println("AttemptTokenExchange called")
-					fmt.Println("accessToken:", accessToken)
-					fmt.Println("refreshToken:", refreshToken)
 					if accessToken != nil && refreshToken != nil && err == nil {
 						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.accessTokenKey, accessToken, expires))
 						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.refreshTokenKey, refreshToken, expires))
 					} else {
+						http.SetCookie(w, &http.Cookie{Name: CookieBaker.accessTokenKey, MaxAge: -1})
+						http.SetCookie(w, &http.Cookie{Name: CookieBaker.refreshTokenKey, MaxAge: -1})
 						w.WriteHeader(http.StatusForbidden)
 						return
 					}
 				} else{
-					// Remove cookies if refresh token fails validation
 					w.WriteHeader(http.StatusForbidden)
 					return
 				}
@@ -141,8 +139,6 @@ func CheckAccess(config *Configuration) HandlerFuncAdapter {
 			access := config.accessControlList.CheckAccess(
 				accessToken.Data[config.roleKey], url, httpMethod,
 			)
-			fmt.Println("validated:", validated)
-			fmt.Println("access:", access)
 			if !access {
 				w.WriteHeader(http.StatusForbidden)
 				return

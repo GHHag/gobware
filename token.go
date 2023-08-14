@@ -43,7 +43,6 @@ type Token struct {
 	Id string `json:"id"`
 	Expires time.Time
 	Data map[string] string `json:"data"`
-	RefreshToken bool
 }
 
 func(token *Token) encode() ([]byte, error) {
@@ -135,7 +134,7 @@ func NewToken(expires time.Time, data map[string] string) (*string, error) {
 
 func NewTokenPair(expires time.Time, data map[string] string) (*string, *string, error) {
 	id, _ := GenerateId(256)
-	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(SaltKey)), []byte(os.Getenv(SecretKey)))
+	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(SecretKey)), []byte(os.Getenv(PepperKey)))
 
 	token := Token{
 		Id: base64.StdEncoding.EncodeToString(id),
@@ -167,7 +166,6 @@ func newRefreshToken(id string, expires time.Time) (*string, error) {
 		Id: id,
 		//Expires: expires.Add(time.Hour * 24),
 		Expires: expires.Add(time.Minute * 4),
-		RefreshToken: true,
 	}
 
 	var err error
@@ -236,15 +234,15 @@ func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken s
 	}
 
 	expired := decodedRefreshToken.Expires.Compare(time.Now()) < 0
-	if !decodedRefreshToken.RefreshToken || expired {
-		return nil, nil, errors.New("Invalid refresh token.")
+	if expired {
+		return nil, nil, errors.New("Token expired.")
 	}
 
 	decodedAccessTokenId, _ := base64.StdEncoding.DecodeString(decodedAccessToken.Id)
 	decodedRefreshTokenId, _ := base64.StdEncoding.DecodeString(decodedRefreshToken.Id)
 	tokenPairVerified := VerifyData(
 		sha256.Sum256, decodedAccessTokenId,
-		[]byte(os.Getenv(SaltKey)), []byte(os.Getenv(SecretKey)), 
+		[]byte(os.Getenv(SecretKey)), []byte(os.Getenv(PepperKey)), 
 		decodedRefreshTokenId,
 	)
 	if !tokenPairVerified {
