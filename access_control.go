@@ -1,6 +1,7 @@
 package gobware
 
 type ACL struct {
+	roleKey string
 	roles map[string] Role
 }
 
@@ -12,8 +13,9 @@ type Route struct {
 	httpMethods map[string] bool
 }
 
-func NewACL() (*ACL){
+func NewACL(roleKey string) (*ACL){
 	return &ACL{
+		roleKey: roleKey,
 		roles: make(map[string] Role),
 	}
 }
@@ -67,6 +69,6 @@ func(acl *ACL) AddCustomRule(function func(), data interface{}){
 	// that implements some interface.
 }
 
-func(acl *ACL) CheckAccess(role string, route string, httpMethod string) bool{
-	return acl.roles[role].routes[route].httpMethods[httpMethod]
+func(acl *ACL) CheckAccess(userData map[string] string, route string, httpMethod string) bool{
+	return acl.roles[userData[acl.roleKey]].routes[route].httpMethods[httpMethod]
 }

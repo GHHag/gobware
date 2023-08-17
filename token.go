@@ -12,9 +12,9 @@ import (
 )
 
 var CookieBaker = CookieBakery {
-	accessTokenKey: "access", // Make this an env var or define it somewhere else.
-	refreshTokenKey: "refresh", // Make this an env var or define it somewhere else.
-	duration: time.Hour * 24,
+	accessTokenKey: Config.AccessTokenKey,
+	refreshTokenKey: Config.RefreshTokenKey,
+	duration: Config.TokenDuration * 24,
 }
 
 type CookieBakery struct {
@@ -164,8 +164,9 @@ func NewTokenPair(expires time.Time, data map[string] string) (*string, *string,
 func newRefreshToken(id string, expires time.Time) (*string, error) {
 	token := Token{
 		Id: id,
+		Expires: expires.Add(CookieBaker.duration),
 		//Expires: expires.Add(time.Hour * 24),
-		Expires: expires.Add(time.Minute * 4),
+		//Expires: expires.Add(time.Minute * 4),
 	}
 
 	var err error

@@ -28,10 +28,10 @@ calling the HandlerFunc.
 
 type HandlerFuncAdapter func(http.HandlerFunc) http.HandlerFunc
 
-func GenerateToken(requestToken RequestToken, config *Configuration) HandlerFuncAdapter {
+func GenerateToken(requestToken RequestToken) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			expires := time.Now().Add(config.tokenDuration)
+			expires := time.Now().Add(Config.TokenDuration)
 
 			token, err := requestToken(r, expires, NewToken)
 			if  token != nil && err != nil {
@@ -46,10 +46,10 @@ func GenerateToken(requestToken RequestToken, config *Configuration) HandlerFunc
 	}
 }
 
-func GenerateTokenPair(requestTokenPair RequestTokenPair, config *Configuration) HandlerFuncAdapter {
+func GenerateTokenPair(requestTokenPair RequestTokenPair) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			expires := time.Now().Add(config.tokenDuration)
+			expires := time.Now().Add(Config.TokenDuration)
 
 			token, refreshToken, err := requestTokenPair(r, expires, NewTokenPair)
 			if  token != nil && err != nil {
@@ -65,21 +65,21 @@ func GenerateTokenPair(requestTokenPair RequestTokenPair, config *Configuration)
 	}
 }
 
-func CheckToken(config *Configuration) HandlerFuncAdapter {
+func CheckToken() HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			accessTokenCookie, err := r.Cookie(config.accessTokenKey)
+			accessTokenCookie, err := r.Cookie(CookieBaker.accessTokenKey)
 			if accessTokenCookie == nil || err != nil {
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
 
 			var validated bool
-			validated, _, err = VerifyToken(accessTokenCookie.Value) // Create new function to enable verification that token belongs to user
+			validated, _, err = VerifyToken(accessTokenCookie.Value)
 			if !validated || err != nil {
-				refreshTokenCookie, err := r.Cookie(config.refreshTokenKey)
+				refreshTokenCookie, err := r.Cookie(CookieBaker.refreshTokenKey)
 				if refreshTokenCookie != nil && err == nil {
-					expires := time.Now().Add(config.tokenDuration)
+					expires := time.Now().Add(Config.TokenDuration)
 					accessToken, refreshToken, err := AttemptTokenExchange(*accessTokenCookie, *refreshTokenCookie, expires)
 					if accessToken != nil && refreshToken != nil && err == nil {
 						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.accessTokenKey, accessToken, expires))
@@ -101,13 +101,13 @@ func CheckToken(config *Configuration) HandlerFuncAdapter {
 	}
 }
 
-func CheckAccess(config *Configuration) HandlerFuncAdapter {
+func CheckAccess() HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			url := r.URL.Path
 			httpMethod := r.Method
 
-			accessTokenCookie, err := r.Cookie(config.accessTokenKey)
+			accessTokenCookie, err := r.Cookie(CookieBaker.accessTokenKey)
 			if err != nil {
 				w.WriteHeader(http.StatusForbidden)
 				return
@@ -117,9 +117,9 @@ func CheckAccess(config *Configuration) HandlerFuncAdapter {
 			var accessToken *Token
 			validated, accessToken, err = VerifyToken(accessTokenCookie.Value)
 			if !validated || err != nil {
-				refreshTokenCookie, err := r.Cookie(config.refreshTokenKey)
+				refreshTokenCookie, err := r.Cookie(CookieBaker.refreshTokenKey)
 				if refreshTokenCookie != nil && err == nil {
-					expires := time.Now().Add(config.tokenDuration)
+					expires := time.Now().Add(Config.TokenDuration)
 					accessToken, refreshToken, err := AttemptTokenExchange(*accessTokenCookie, *refreshTokenCookie, expires)
 					if accessToken != nil && refreshToken != nil && err == nil {
 						http.SetCookie(w, CookieBaker.BakeCookie(CookieBaker.accessTokenKey, accessToken, expires))
@@ -136,9 +136,7 @@ func CheckAccess(config *Configuration) HandlerFuncAdapter {
 				}
 			}
 
-			access := config.accessControlList.CheckAccess(
-				accessToken.Data[config.roleKey], url, httpMethod,
-			)
+			access := Config.accessControlList.CheckAccess(accessToken.Data, url, httpMethod)
 			if !access {
 				w.WriteHeader(http.StatusForbidden)
 				return
@@ -164,37 +162,3 @@ func Adapt(hf http.HandlerFunc, adapters ...HandlerFuncAdapter) http.HandlerFunc
 
 	return hf
 }
-
-/////////////////////////////////////////////////7
-
-// Explore example use cases of this interface and if it is needed at all
-/*type MiddlewareHandler interface {
-	ServeHTTP(http.ResponseWriter, *http.Request)
-	runMiddleware(*http.Request)
-}
-
-type HandlerAdapter struct {
-	handler http.Handler
-	configuration *Configuration
-}
-
-func NewHandlerAdapter(handler http.Handler, configuration *Configuration) *HandlerAdapter{
-	return &HandlerAdapter{
-		handler: handler,
-		configuration: configuration,
-	}
-}
-
-// Should func also return error?
-func(h *HandlerAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request){
-	h.handler.ServeHTTP(w, r)
-	pass := h.runMiddleware(r)
-	if pass {
-		h.handler.ServeHTTP(w, r)
-	}
-}
-
-// Should func also return error?
-func(h *HandlerAdapter) runMiddleware(r *http.Request) bool{
-	return h.configuration.RunChain(r)
-}*/

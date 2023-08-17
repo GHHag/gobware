@@ -1,7 +1,6 @@
 package gobware
 
 import (
-	"net/http"
 	"encoding/base64"
 	"os"
 	"bufio"
@@ -10,15 +9,34 @@ import (
 	"time"
 )
 
+// Define constant Configuration struct?
+// Allow package user to inject configuration struct?
+
 const SecretKey = "SECRET"
 const SaltKey = "SALT"
 const PepperKey = "PEPPER"
+const accessTokenKey = "access"
+const refreshTokenKey = "refresh"
+//const tokenDuration = time.Hour
+const tokenDuration = time.Minute
 
-// Define constand Configuration struct?
-// Allow package user to inject configuration struct?
-/*const Config Configuration {
-	roleKey: "role",
-}*/
+type Configuration struct {
+	accessControlList *ACL
+	RoleKey string
+	AccessTokenKey string
+	RefreshTokenKey string
+	TokenDuration time.Duration
+}
+
+var Config Configuration = Configuration {
+	AccessTokenKey: accessTokenKey,
+	RefreshTokenKey: refreshTokenKey,
+	TokenDuration: tokenDuration,
+}
+
+func SetACL(ACL *ACL) {
+	Config.accessControlList = ACL
+}
 
 func generateEnv() {
 	file, err := os.Create("./.gobenv")
@@ -75,46 +93,23 @@ func init() {
 
 Use Template package to generate/define Configuration/settings?
 
-Define a Template for Token and use as a generic way of evaluating
-the token in a ChainLink?
-
 */
 
-type ChainLink func(*http.Request) bool
-
-type Configuration struct {
-	//chain []ChainLink
+/*type Configuration struct {
 	accessControlList *ACL
-	roleKey string
-	accessTokenKey string
-	refreshTokenKey string
-	tokenDuration time.Duration
-}
+	//roleKey string
+	//accessTokenKey string
+	//refreshTokenKey string
+	//tokenDuration time.Duration
+}*/
 
-func NewConfiguration(ACL *ACL, roleKey string, tokenDuration time.Duration) *Configuration {
+//func NewConfiguration(ACL *ACL, roleKey string, tokenDuration time.Duration) *Configuration {
+/*func NewConfiguration(ACL *ACL) *Configuration {
 	return &Configuration{
-		//chain: []ChainLink{},
 		accessControlList: ACL,
-		roleKey: roleKey,
-		accessTokenKey: CookieBaker.accessTokenKey,
-		refreshTokenKey: CookieBaker.refreshTokenKey,
-		tokenDuration: tokenDuration,
+		//roleKey: roleKey,
+		//accessTokenKey: CookieBaker.accessTokenKey,
+		//refreshTokenKey: CookieBaker.refreshTokenKey,
+		//tokenDuration: tokenDuration,
 	}
-}
-
-/*func(config *Configuration) AddChainLink(chainLink ChainLink) {
-	config.chain = append(config.chain, chainLink)
-}
-
-// Run ChainLink functions concurrent?
-func(config *Configuration) RunChain(r *http.Request) bool {
-	for _, chainLink := range config.chain {
-		pass := chainLink(r)
-	
-		if !pass {
-			return false
-		}
-	}
-
-	return true
 }*/
