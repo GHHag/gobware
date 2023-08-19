@@ -2,21 +2,21 @@ package gobware
 
 type ACL struct {
 	roleKey string
-	roles map[string] Role
+	roles map[string] role
 }
 
-type Role struct {
-	routes map[string] Route
+type role struct {
+	routes map[string] route
 }
 
-type Route struct {
+type route struct {
 	httpMethods map[string] bool
 }
 
 func NewACL(roleKey string) (*ACL){
 	return &ACL{
 		roleKey: roleKey,
-		roles: make(map[string] Role),
+		roles: make(map[string] role),
 	}
 }
 
@@ -35,19 +35,19 @@ func(acl *ACL) AddACLRule(role string, route string, httpMethods []string){
 	acl.addACLMethods(role, route, httpMethods)
 }
 
-func(acl *ACL) addACLRole(role string){
-	_, ok := acl.roles[role]
+func(acl *ACL) addACLRole(roleStr string){
+	_, ok := acl.roles[roleStr]
 	if !ok {
-		acl.roles[role] = Role{
-			routes: make(map[string] Route),
+		acl.roles[roleStr] = role{
+			routes: make(map[string] route),
 		}
 	}
 }
 
-func(acl *ACL) addACLRoute(role string, route string){
-	_, ok := acl.roles[role].routes[route]
+func(acl *ACL) addACLRoute(role string, routeStr string){
+	_, ok := acl.roles[role].routes[routeStr]
 	if !ok {
-		acl.roles[role].routes[route] = Route{
+		acl.roles[role].routes[routeStr] = route{
 			httpMethods: make(map[string] bool),
 		}
 	}

@@ -11,29 +11,6 @@ import (
 	"os"
 )
 
-var CookieBaker = CookieBakery {
-	accessTokenKey: Config.AccessTokenKey,
-	refreshTokenKey: Config.RefreshTokenKey,
-	duration: Config.TokenDuration * 24,
-}
-
-type CookieBakery struct {
-	accessTokenKey string
-	refreshTokenKey string
-	duration time.Duration
-}
-
-func(cookieBakery *CookieBakery) BakeCookie(name string, value *string, expires time.Time) *http.Cookie {
-	return &http.Cookie {
-		Name: name,
-		Value: *value,
-		Expires: expires.Add(cookieBakery.duration),
-		HttpOnly: true,
-		Secure: true,
-		SameSite: http.SameSiteStrictMode,
-	}
-}
-
 type CreateToken func(time.Time, map[string] string) (*string, error)
 type RequestToken func(*http.Request, time.Time, CreateToken) (*string, error)
 type CreateTokenPair func(time.Time, map[string] string) (*string, *string, error)
@@ -92,13 +69,13 @@ func(signedToken *signedToken) decode(encodedSignedToken string) error {
 }
 
 func(signedToken *signedToken) sign() {
-	mac := hmac.New(sha256.New, []byte(os.Getenv(SecretKey) + os.Getenv(SaltKey)))
+	mac := hmac.New(sha256.New, []byte(os.Getenv(secretKey) + os.Getenv(saltKey)))
 	mac.Write([]byte(signedToken.Data))
 	signedToken.Signature = []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
 }
 
 func(signedToken *signedToken) verify() bool {
-	mac := hmac.New(sha256.New, []byte(os.Getenv(SecretKey) + os.Getenv(SaltKey)))
+	mac := hmac.New(sha256.New, []byte(os.Getenv(secretKey) + os.Getenv(saltKey)))
 	mac.Write(signedToken.Data)
 
 	expected := []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
@@ -134,7 +111,7 @@ func NewToken(expires time.Time, data map[string] string) (*string, error) {
 
 func NewTokenPair(expires time.Time, data map[string] string) (*string, *string, error) {
 	id, _ := GenerateId(256)
-	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(SecretKey)), []byte(os.Getenv(PepperKey)))
+	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(secretKey)), []byte(os.Getenv(pepperKey)))
 
 	token := Token{
 		Id: base64.StdEncoding.EncodeToString(id),
@@ -164,8 +141,7 @@ func NewTokenPair(expires time.Time, data map[string] string) (*string, *string,
 func newRefreshToken(id string, expires time.Time) (*string, error) {
 	token := Token{
 		Id: id,
-		Expires: expires.Add(CookieBaker.duration),
-		//Expires: expires.Add(time.Hour * 24),
+		Expires: expires.Add(TokenDuration * tokenDurationMultiplier),
 		//Expires: expires.Add(time.Minute * 4),
 	}
 
@@ -203,7 +179,7 @@ func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
 	return verified && !expired, &decodedToken, nil
 }
 
-func VerifyTokenId(encodedSignedToken string, id string) (bool, *Token, error) {
+/*func VerifyTokenId(encodedSignedToken string, id string) (bool, *Token, error) {
 	verified, token, err := VerifyToken(encodedSignedToken)
 
 	if !verified || err != nil {
@@ -213,7 +189,7 @@ func VerifyTokenId(encodedSignedToken string, id string) (bool, *Token, error) {
 	// Id's should be signed and encrypted, and therefore needed
 	// to be encrypted and matched here before returning.
 	return verified && token.Id == id, token, err
-}
+}*/
 
 func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken string, expires time.Time) (*string, *string, error) {
 	decodedSignedAccessToken := signedToken{}
@@ -243,7 +219,7 @@ func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken s
 	decodedRefreshTokenId, _ := base64.StdEncoding.DecodeString(decodedRefreshToken.Id)
 	tokenPairVerified := VerifyData(
 		sha256.Sum256, decodedAccessTokenId,
-		[]byte(os.Getenv(SecretKey)), []byte(os.Getenv(PepperKey)), 
+		[]byte(os.Getenv(secretKey)), []byte(os.Getenv(pepperKey)), 
 		decodedRefreshTokenId,
 	)
 	if !tokenPairVerified {
@@ -262,5 +238,16 @@ func AttemptTokenExchange(accessTokenCookie http.Cookie, refreshTokenCookie http
 		return accessToken, refreshToken, err
 	} else {
 		return nil, nil, err
+	}
+}
+
+func BakeCookie(name string, value *string, expires time.Time) *http.Cookie {
+	return &http.Cookie {
+		Name: name,
+		Value: *value,
+		Expires: expires.Add(TokenDuration * tokenDurationMultiplier),
+		HttpOnly: true,
+		Secure: true,
+		SameSite: http.SameSiteStrictMode,
 	}
 }

@@ -9,33 +9,23 @@ import (
 	"time"
 )
 
-// Define constant Configuration struct?
-// Allow package user to inject configuration struct?
-
-const SecretKey = "SECRET"
-const SaltKey = "SALT"
-const PepperKey = "PEPPER"
-const accessTokenKey = "access"
-const refreshTokenKey = "refresh"
-//const tokenDuration = time.Hour
-const tokenDuration = time.Minute
+const secretKey = "SECRET"
+const saltKey = "SALT"
+const pepperKey = "PEPPER"
+const AccessTokenKey = "access"
+const RefreshTokenKey = "refresh"
+//const TokenDuration = time.Hour
+const TokenDuration = time.Minute
+const tokenDurationMultiplier = 24
 
 type Configuration struct {
-	accessControlList *ACL
-	RoleKey string
-	AccessTokenKey string
-	RefreshTokenKey string
-	TokenDuration time.Duration
+	AccessControlList *ACL
 }
 
-var Config Configuration = Configuration {
-	AccessTokenKey: accessTokenKey,
-	RefreshTokenKey: refreshTokenKey,
-	TokenDuration: tokenDuration,
-}
+var Config Configuration = Configuration{}
 
 func SetACL(ACL *ACL) {
-	Config.accessControlList = ACL
+	Config.AccessControlList = ACL
 }
 
 func generateEnv() {
@@ -50,9 +40,9 @@ func generateEnv() {
 	secret, _ := GenerateSalt(256)
 	salt, _ := GenerateSalt(256)
 	pepper, _ := GenerateSalt(256)
-	writer.WriteString(fmt.Sprintf("%s=%s\n", SecretKey, base64.StdEncoding.EncodeToString(secret)))
-	writer.WriteString(fmt.Sprintf("%s=%s", SaltKey, base64.StdEncoding.EncodeToString(salt)))
-	writer.WriteString(fmt.Sprintf("%s=%s", PepperKey, base64.StdEncoding.EncodeToString(pepper)))
+	writer.WriteString(fmt.Sprintf("%s=%s\n", secretKey, base64.StdEncoding.EncodeToString(secret)))
+	writer.WriteString(fmt.Sprintf("%s=%s", saltKey, base64.StdEncoding.EncodeToString(salt)))
+	writer.WriteString(fmt.Sprintf("%s=%s", pepperKey, base64.StdEncoding.EncodeToString(pepper)))
 
 	err = writer.Flush()
 	if err != nil {
@@ -88,28 +78,3 @@ func init() {
         panic(err)
     }
 }
-
-/*
-
-Use Template package to generate/define Configuration/settings?
-
-*/
-
-/*type Configuration struct {
-	accessControlList *ACL
-	//roleKey string
-	//accessTokenKey string
-	//refreshTokenKey string
-	//tokenDuration time.Duration
-}*/
-
-//func NewConfiguration(ACL *ACL, roleKey string, tokenDuration time.Duration) *Configuration {
-/*func NewConfiguration(ACL *ACL) *Configuration {
-	return &Configuration{
-		accessControlList: ACL,
-		//roleKey: roleKey,
-		//accessTokenKey: CookieBaker.accessTokenKey,
-		//refreshTokenKey: CookieBaker.refreshTokenKey,
-		//tokenDuration: tokenDuration,
-	}
-}*/
