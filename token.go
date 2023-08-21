@@ -142,7 +142,6 @@ func newRefreshToken(id string, expires time.Time) (*string, error) {
 	token := Token{
 		Id: id,
 		Expires: expires.Add(TokenDuration * tokenDurationMultiplier),
-		//Expires: expires.Add(time.Minute * 4),
 	}
 
 	var err error

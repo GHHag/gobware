@@ -13,7 +13,7 @@ type route struct {
 	httpMethods map[string] bool
 }
 
-func NewACL(roleKey string) (*ACL){
+func NewACL(roleKey string) (*ACL) {
 	return &ACL{
 		roleKey: roleKey,
 		roles: make(map[string] role),
@@ -21,7 +21,7 @@ func NewACL(roleKey string) (*ACL){
 }
 
 // Change order of how ACL is composed to avoid redundant stuff?
-func(acl *ACL) AddACLRule(role string, route string, httpMethods []string){
+func(acl *ACL) AddACLRule(role string, route string, httpMethods []string) {
 	_, ok := acl.roles[role]
 	if !ok {
 		acl.addACLRole(role)
@@ -35,7 +35,7 @@ func(acl *ACL) AddACLRule(role string, route string, httpMethods []string){
 	acl.addACLMethods(role, route, httpMethods)
 }
 
-func(acl *ACL) addACLRole(roleStr string){
+func(acl *ACL) addACLRole(roleStr string) {
 	_, ok := acl.roles[roleStr]
 	if !ok {
 		acl.roles[roleStr] = role{
@@ -44,7 +44,7 @@ func(acl *ACL) addACLRole(roleStr string){
 	}
 }
 
-func(acl *ACL) addACLRoute(role string, routeStr string){
+func(acl *ACL) addACLRoute(role string, routeStr string) {
 	_, ok := acl.roles[role].routes[routeStr]
 	if !ok {
 		acl.roles[role].routes[routeStr] = route{
@@ -53,7 +53,7 @@ func(acl *ACL) addACLRoute(role string, routeStr string){
 	}
 }
 
-func(acl *ACL) addACLMethods(role string, route string, httpMethods []string){
+func(acl *ACL) addACLMethods(role string, route string, httpMethods []string) {
 	for _, httpMethod := range httpMethods {
 		_, ok := acl.roles[role].routes[route].httpMethods[httpMethod]
 		if !ok {
@@ -62,13 +62,13 @@ func(acl *ACL) addACLMethods(role string, route string, httpMethods []string){
 	}
 }
 
-func(acl *ACL) AddCustomRule(function func(), data interface{}){
+func(acl *ACL) AddCustomRule(function func(), data interface{}) {
 	// Allow package users to add custom rules?
 
 	// The ACL type could have a field that stores custom rules as functions
 	// that implements some interface.
 }
 
-func(acl *ACL) CheckAccess(userData map[string] string, route string, httpMethod string) bool{
+func(acl *ACL) CheckAccess(userData map[string] string, route string, httpMethod string) bool {
 	return acl.roles[userData[acl.roleKey]].routes[route].httpMethods[httpMethod]
 }
