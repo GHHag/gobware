@@ -34,7 +34,7 @@ func GenerateToken(requestToken RequestToken) HandlerFuncAdapter {
 			expires := time.Now().Add(TokenDuration)
 
 			token, err := requestToken(r, expires, NewToken)
-			if  token != nil && err != nil {
+			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -52,7 +52,7 @@ func GenerateTokenPair(requestTokenPair RequestTokenPair) HandlerFuncAdapter {
 			expires := time.Now().Add(TokenDuration)
 
 			token, refreshToken, err := requestTokenPair(r, expires, NewTokenPair)
-			if  token != nil && err != nil {
+			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -81,7 +81,7 @@ func CheckToken() HandlerFuncAdapter {
 				if refreshTokenCookie != nil && err == nil {
 					expires := time.Now().Add(TokenDuration)
 					accessToken, refreshToken, err := AttemptTokenExchange(*accessTokenCookie, *refreshTokenCookie, expires)
-					if accessToken != nil && refreshToken != nil && err == nil {
+					if err == nil {
 						http.SetCookie(w, BakeCookie(AccessTokenKey, accessToken, expires))
 						http.SetCookie(w, BakeCookie(RefreshTokenKey, refreshToken, expires))
 					} else {
@@ -121,7 +121,7 @@ func CheckAccess() HandlerFuncAdapter {
 				if refreshTokenCookie != nil && err == nil {
 					expires := time.Now().Add(TokenDuration)
 					accessToken, refreshToken, err := AttemptTokenExchange(*accessTokenCookie, *refreshTokenCookie, expires)
-					if accessToken != nil && refreshToken != nil && err == nil {
+					if err == nil {
 						http.SetCookie(w, BakeCookie(AccessTokenKey, accessToken, expires))
 						http.SetCookie(w, BakeCookie(RefreshTokenKey, refreshToken, expires))
 					} else {

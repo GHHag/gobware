@@ -19,12 +19,12 @@ const TokenDuration = time.Minute
 const tokenDurationMultiplier = 24
 
 type Configuration struct {
-	AccessControlList *ACL
+	AccessControlList ACL
 }
 
 var Config Configuration = Configuration{}
 
-func SetACL(ACL *ACL) {
+func SetACL(ACL ACL) {
 	Config.AccessControlList = ACL
 }
 

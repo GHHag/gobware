@@ -13,8 +13,8 @@ type route struct {
 	httpMethods map[string] bool
 }
 
-func NewACL(roleKey string) (*ACL) {
-	return &ACL{
+func NewACL(roleKey string) (ACL) {
+	return ACL{
 		roleKey: roleKey,
 		roles: make(map[string] role),
 	}
