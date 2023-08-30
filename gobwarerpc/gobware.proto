@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package main;
+
+option go_package = "./gobwarerpc";
+
+service GobwareService {
+	rpc AddACLRule (AddACLRuleRequest) returns (AddACLRuleResponse);
+	rpc SetACL (SetACLRequest) returns ();
+	rpc CreateToken (CreateTokenRequest) returns (CreateTokenResponse);
+	rpc CreateTokenPair (CreateTokenPairRequest) returns (CreateTokenPairResponse);
+	rpc CheckAccess () returns ();
+	rpc CheckToken () returns ();
+	rpc Adapt () returns ();
+}
+
+message AddACLRuleRequest {
+	string role = 1;
+	string route = 2;
+	[]string httpMethods = 3;
+}
+
+message AddACLRuleResponse {
+	// What's the proper definition of hashmaps?
+	hashmap [string, hashmap[string, bool]] = 1;
+}
+
+message SetACLRequest {
+	// Is the function to set acl needed?
+	[]AddACLRuleResponse = 1;
+}
+
+message CreateTokenRequest {
+	timestamp duration = 1;
+	hashmap [string, string] data = 2;
+}
+
+message CreateTokenResponse {
+	string encodedToken = 1;
+}
+
+message CreateTokenPairRequest {
+	timestamp duration = 1;
+	// What's the proper definition of hashmaps?
+	hashmap [string, string] data = 2;
+}
+
+message CreateTokenPairResponse {
+	string encodedAccessToken = 1;
+	string encodedRefreshToken = 1;
+}
