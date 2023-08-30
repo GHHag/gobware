@@ -12,8 +12,6 @@ With built-in Access Control Lists, Gobware enables fine-grained control over us
 3. Rate Limiting and Throttling  
 Gobware offers rate limiting and throttling capabilities to control the rate of incoming requests from clients. This helps prevent abuse and potential Denial-of-Service (DoS) attacks by restricting the number of requests per client within a specified time frame.
 
-4. Secure Password Hashing  
-
 Getting Started
 To start using Gobware in your GO web application, follow these simple steps:
 
@@ -34,6 +32,8 @@ This README file is a high-level description of the Gobware package, outlining i
 ---
 
 Future package features may include the following:  
+Cross-language usage via protocol buffers/gRPC
+
 Caching
 
 Request rate limiting
