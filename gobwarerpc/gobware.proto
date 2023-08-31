@@ -17,22 +17,21 @@ service GobwareService {
 message AddACLRuleRequest {
 	string role = 1;
 	string route = 2;
-	[]string httpMethods = 3;
+	repeated string httpMethods = 3;
 }
 
 message AddACLRuleResponse {
-	// What's the proper definition of hashmaps?
-	hashmap [string, hashmap[string, bool]] = 1;
+	map <string, map<string, bool>> ACLRule = 1;
 }
 
 message SetACLRequest {
 	// Is the function to set acl needed?
-	[]AddACLRuleResponse = 1;
+	repeated AddACLRuleResponse = 1;
 }
 
 message CreateTokenRequest {
 	timestamp duration = 1;
-	hashmap [string, string] data = 2;
+	map <string, string> data = 2;
 }
 
 message CreateTokenResponse {
@@ -41,11 +40,10 @@ message CreateTokenResponse {
 
 message CreateTokenPairRequest {
 	timestamp duration = 1;
-	// What's the proper definition of hashmaps?
-	hashmap [string, string] data = 2;
+	map <string, string> data = 2;
 }
 
 message CreateTokenPairResponse {
 	string encodedAccessToken = 1;
-	string encodedRefreshToken = 1;
+	string encodedRefreshToken = 2;
 }
