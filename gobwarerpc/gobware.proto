@@ -9,9 +9,9 @@ service GobwareService {
 	rpc SetACL (SetACLRequest) returns ();
 	rpc CreateToken (CreateTokenRequest) returns (CreateTokenResponse);
 	rpc CreateTokenPair (CreateTokenPairRequest) returns (CreateTokenPairResponse);
-	rpc CheckAccess () returns ();
-	rpc CheckToken () returns ();
-	rpc Adapt () returns ();
+	rpc CheckAccess (CheckAccessRequest) returns (CheckAccessResponse);
+	rpc CheckToken (CheckTokenRequest) returns (CheckTokenResponse);
+	//rpc Adapt () returns ();
 }
 
 message AddACLRuleRequest {
@@ -46,4 +46,22 @@ message CreateTokenPairRequest {
 message CreateTokenPairResponse {
 	string encodedAccessToken = 1;
 	string encodedRefreshToken = 2;
+}
+
+message CheckAccessRequest {
+	string encodedToken = 1;
+	map <string, string> data = 2;
+}
+
+message CheckAccessResponse {
+	bool access = 1;
+}
+
+message CheckTokenRequest {
+	string encodedToken = 1;
+	map <string, string> data = 2;
+}
+
+message CheckTokenResponse {
+	bool access = 1;
 }
