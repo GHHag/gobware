@@ -6,7 +6,7 @@ option go_package = "./gobwarerpc";
 
 service GobwareService {
 	rpc AddACLRule (AddACLRuleRequest) returns (AddACLRuleResponse);
-	rpc SetACL (SetACLRequest) returns ();
+	rpc SetACL (SetACLRequest) returns (SetACLResponse);
 	rpc CreateToken (CreateTokenRequest) returns (CreateTokenResponse);
 	rpc CreateTokenPair (CreateTokenPairRequest) returns (CreateTokenPairResponse);
 	rpc CheckAccess (CheckAccessRequest) returns (CheckAccessResponse);
@@ -20,17 +20,27 @@ message AddACLRuleRequest {
 	repeated string httpMethods = 3;
 }
 
+message ACLRule {
+	string httpMethod = 1;
+	bool access = 2;
+}
+
 message AddACLRuleResponse {
-	map <string, map<string, bool>> ACLRule = 1;
+	// map <string, map<string, bool>> ACLRule = 1;
+	map <string, ACLRule> ACLRules = 1;
 }
 
 message SetACLRequest {
 	// Is the function to set acl needed?
-	repeated AddACLRuleResponse = 1;
+	repeated AddACLRuleResponse ACLRuleResponse = 1;
+}
+
+message SetACLResponse {
+	bool successful = 1;
 }
 
 message CreateTokenRequest {
-	timestamp duration = 1;
+	int32 duration = 1;
 	map <string, string> data = 2;
 }
 
@@ -39,7 +49,7 @@ message CreateTokenResponse {
 }
 
 message CreateTokenPairRequest {
-	timestamp duration = 1;
+	int32 duration = 1;
 	map <string, string> data = 2;
 }
 
@@ -65,3 +75,7 @@ message CheckTokenRequest {
 message CheckTokenResponse {
 	bool access = 1;
 }
+
+// message Adapt {
+//
+// }
