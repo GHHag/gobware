@@ -5,34 +5,21 @@ import (
 	"context"
 	// "log"
 	"net"
-	"net/http"
 	"time"
 	"google.golang.org/grpc"
 	pb "gobwarerpc/gobwarerpc"
 	"github.com/GHHag/gobware"
 )
 
-// Change signature of gobware.CreateToken, make it accept a map[string]string instead of a *http.Request param, and change this function accordingly
-func createToken(r *http.Request, expires time.Time, createToken gobware.CreateToken) (string, error) {
-	id := "abc123"
-	data := map[string]string {
-		"userId": id,
-		"user-role": "user",
-	}
-
+// If equal function is defined in gobware, use that instead
+func createToken(expires time.Time, data map[string]string, createToken gobware.CreateToken) (string, error) {
 	token, err := createToken(expires, data)
 
 	return token, err
 }
 
-// Change signature of gobware.CreateToken, make it accept a map[string]string instead of a *http.Request param, and change this function accordingly
-func createTokenPair(r *http.Request, expires time.Time, createTokenPair gobware.CreateTokenPair) (string, string, error) {
-	id := "abc123"
-	data := map[string]string {
-		"userId": id,
-		"user-role": "user",
-	}
-
+// If equal function is defined in gobware, use that instead
+func createTokenPair(expires time.Time, data map[string]string, createTokenPair gobware.CreateTokenPair) (string, string, error) {
 	token, refreshToken, err := createTokenPair(expires, data)
 
 	return token, refreshToken, err
@@ -43,33 +30,25 @@ type server struct {
 	ACL gobware.ACL
 }
 
-// func(s *server) CreateACL(ctx context.Context, req *pb.CreateACLRequest) (*pb.CreateACLResponse, error) {
-// 	ACL := gobware.NewACL("user-role")
-//
-// 	return nil, nil
-// }
-
 func(s *server) AddACLRule(ctx context.Context, req *pb.AddACLRuleRequest) (*pb.AddACLRuleResponse, error) {
-	fmt.Println(req.Role)
-	fmt.Println(req.Route)
-	fmt.Println(req.HttpMethods)
+	fmt.Println("AddACLRule - req.Role:", req.Role)
+	fmt.Println("AddACLRule - req.Route:", req.Route)
+	fmt.Println("AddACLRule - req.HttpMethods:", req.HttpMethods)
 
 	s.ACL.AddACLRule(req.Role, req.Route, req.HttpMethods)
 
 	res := &pb.AddACLRuleResponse {
-		successful: true,
+		Successful: true,
 	}
 
 	return res, nil
 }
 
-// func(s *server) SetACL(ctx context.Context, req *pb.SetACLRequest) (*pb.SetACLResponse, error) {
-// 	return nil, nil
-// }
-
 func(s *server) CreateToken(ctx context.Context, req *pb.CreateTokenRequest) (*pb.CreateTokenResponse, error) {
-	expires := time.Unix(req.expires, 0)
-	token, err := createToken(expires, req.data)
+	fmt.Println("CreateToken - req.Data:", req.Data)
+
+	expires := time.Now().Add(gobware.TokenDuration)
+	token, err := createToken(expires, req.Data, gobware.NewToken)
 
 	if err != nil {
 		return nil, err
@@ -83,8 +62,10 @@ func(s *server) CreateToken(ctx context.Context, req *pb.CreateTokenRequest) (*p
 }
 
 func(s *server) CreateTokenPair(ctx context.Context, req *pb.CreateTokenPairRequest) (*pb.CreateTokenPairResponse, error) {
-	expires := time.Unix(req.expires, 0)
-	token, refreshToken, err := createTokenPair(expires, req.data)
+	fmt.Println("CreateTokenPair - req.Data:", req.Data)
+
+	expires := time.Now().Add(gobware.TokenDuration)
+	token, refreshToken, err := createTokenPair(expires, req.Data, gobware.NewTokenPair)
 
 	if err != nil {
 		return nil, err
@@ -99,6 +80,9 @@ func(s *server) CreateTokenPair(ctx context.Context, req *pb.CreateTokenPairRequ
 }
 
 func(s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*pb.CheckAccessResponse, error) {
+	fmt.Println("CheckAccess - req.EncodedToken:", req.EncodedToken)
+	fmt.Println("CheckAccess - req.Data:", req.Data)
+
 	res := &pb.CheckAccessResponse {
 		Access: true,
 	}
@@ -107,6 +91,9 @@ func(s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*p
 }
 
 func(s *server) CheckToken(ctx context.Context, req *pb.CheckTokenRequest) (*pb.CheckTokenResponse, error) {
+	fmt.Println("CheckToken - req.EncodedToken:", req.EncodedToken)
+	fmt.Println("CheckToken - req.Data:", req.Data)
+
 	res := &pb.CheckTokenResponse {
 		Access: true,
 	}

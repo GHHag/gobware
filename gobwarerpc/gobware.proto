@@ -50,17 +50,16 @@ message AddACLRuleResponse {
 // }
 
 message CreateTokenRequest {
-	int64 expires = 1;
-	map <string, string> data = 2;
+	map <string, string> data = 1;
 }
 
 message CreateTokenResponse {
 	string encodedToken = 1;
 }
 
+// Remove and use CreateTokenRequest if they have the same definition
 message CreateTokenPairRequest {
-	int64 expires = 1;
-	map <string, string> data = 2;
+	map <string, string> data = 1;
 }
 
 message CreateTokenPairResponse {
