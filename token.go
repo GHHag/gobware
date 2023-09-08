@@ -11,15 +11,15 @@ import (
 	"os"
 )
 
-type CreateToken func(time.Time, map[string] string) (string, error)
+type CreateToken func(time.Time, map[string]string) (string, error)
 type RequestToken func(*http.Request, time.Time, CreateToken) (string, error)
-type CreateTokenPair func(time.Time, map[string] string) (string, string, error)
+type CreateTokenPair func(time.Time, map[string]string) (string, string, error)
 type RequestTokenPair func(*http.Request, time.Time, CreateTokenPair) (string, string, error)
 
 type Token struct {
 	Id string `json:"id"`
 	Expires time.Time
-	Data map[string] string `json:"data"`
+	Data map[string]string `json:"data"`
 }
 
 func(token *Token) encode() ([]byte, error) {
@@ -109,7 +109,7 @@ func NewToken(expires time.Time, data map[string] string) (string, error) {
 	return encodedSignedToken, nil
 }
 
-func NewTokenPair(expires time.Time, data map[string] string) (string, string, error) {
+func NewTokenPair(expires time.Time, data map[string]string) (string, string, error) {
 	id, _ := GenerateId(256)
 	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(secretKey)), []byte(os.Getenv(pepperKey)))
 
@@ -252,19 +252,4 @@ func BakeCookie(name string, value string, expires time.Time) *http.Cookie {
 		Secure: true,
 		SameSite: http.SameSiteStrictMode,
 	}
-}
-
-//func createToken(r *http.Request, duration time.Time, data map[string] string) (*string, error) {
-func createToken(r *http.Request, duration time.Time, data map[string] string) (string, error) {
-	// parse request data body needed to create token
-	token, err := NewToken(duration, data)
-
-	return token, err
-}
-
-func createTokenPair(r *http.Request, duration time.Time, data map[string] string) (string, string, error) {
-	// parse request data body needed to create tokens
-	token, refreshToken, err := NewTokenPair(duration, data)
-
-	return token, refreshToken, err
 }

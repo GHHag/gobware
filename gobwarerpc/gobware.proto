@@ -5,49 +5,24 @@ package main;
 option go_package = "./gobwarerpc";
 
 service GobwareService {
-	// rpc CreateACL (CreateACLRequest) returns (CreateACLResponse);
 	rpc AddACLRule (AddACLRuleRequest) returns (AddACLRuleResponse);
-	// rpc SetACL (SetACLRequest) returns (SetACLResponse);
 	rpc CreateToken (CreateTokenRequest) returns (CreateTokenResponse);
-	rpc CreateTokenPair (CreateTokenPairRequest) returns (CreateTokenPairResponse);
-	rpc CheckAccess (CheckAccessRequest) returns (CheckAccessResponse);
-	rpc CheckToken (CheckTokenRequest) returns (CheckTokenResponse);
+	rpc CreateTokenPair (CreateTokenRequest) returns (CreateTokenPairResponse);
+	rpc CheckAccess (CheckAccessTokenRequest) returns (CheckAccessTokenResponse);
+	rpc CheckAccessToken (CheckAccessTokenRequest) returns (CheckAccessTokenResponse);
+	rpc CheckRefreshToken (CheckRefreshTokenRequest) returns (CheckRefreshTokenResponse);
 	//rpc Adapt () returns ();
 }
-
-// message CreateACLRequest {
-// 	string roleKey = 1;
-// }
-
-// message CreateACLResponse {
-// 	bool successful = 1;
-// }
 
 message AddACLRuleRequest {
 	string role = 1;
 	string route = 2;
 	repeated string httpMethods = 3;
-	// string httpMethod = 3;
 }
-
-// message ACLRule {
-// 	string httpMethod = 1;
-// 	bool access = 2;
-// }
 
 message AddACLRuleResponse {
-	// map <string, ACLRule> ACLRules = 1;
 	bool successful = 1;
 }
-
-// message SetACLRequest {
-// 	// Is the function to set acl needed?
-// 	repeated AddACLRuleResponse ACLRuleResponse = 1;
-// }
-//
-// message SetACLResponse {
-// 	bool successful = 1;
-// }
 
 message CreateTokenRequest {
 	map <string, string> data = 1;
@@ -58,31 +33,63 @@ message CreateTokenResponse {
 }
 
 // Remove and use CreateTokenRequest if they have the same definition
-message CreateTokenPairRequest {
-	map <string, string> data = 1;
-}
+// message CreateTokenPairRequest {
+// 	map <string, string> data = 1;
+// }
 
 message CreateTokenPairResponse {
 	string encodedAccessToken = 1;
 	string encodedRefreshToken = 2;
 }
 
-message CheckAccessRequest {
-	string encodedToken = 1;
-	map <string, string> data = 2;
+// message CheckAccessRequest {
+// 	string encodedToken = 1;
+// 	map <string, string> data = 2;
+// }
+//
+// message CheckAccessResponse {
+// 	bool access = 1;
+// }
+
+// message CheckTokenRequest {
+// 	string encodedToken = 1;
+// 	map <string, string> data = 2;
+// }
+//
+// message CheckTokenResponse {
+// 	bool access = 1;
+// }
+//
+// message CheckTokenPairRequest {
+// 	string encodedAccessToken = 1;
+// 	string encodedRefreshToken = 2;
+// 	map <string, string> data = 3;
+// }
+//
+// message CheckTokenPairResponse {
+// 	bool access = 1;
+//
+// }
+
+message CheckAccessTokenRequest {
+ 	string encodedToken = 1;
+ 	map <string, string> data = 2;
 }
 
-message CheckAccessResponse {
+message CheckAccessTokenResponse {
 	bool access = 1;
 }
 
-message CheckTokenRequest {
-	string encodedToken = 1;
-	map <string, string> data = 2;
+message CheckRefreshTokenRequest {
+ 	string encodedAccessToken = 1;
+ 	string encodedRefreshToken = 2;
+ 	map <string, string> data = 3;
 }
 
-message CheckTokenResponse {
+message CheckRefreshTokenResponse {
 	bool access = 1;
+	string encodedAccessToken = 2;
+	string encodedRefreshToken = 3;
 }
 
 // message Adapt {

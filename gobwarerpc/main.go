@@ -11,20 +11,6 @@ import (
 	"github.com/GHHag/gobware"
 )
 
-// If equal function is defined in gobware, use that instead
-func createToken(expires time.Time, data map[string]string, createToken gobware.CreateToken) (string, error) {
-	token, err := createToken(expires, data)
-
-	return token, err
-}
-
-// If equal function is defined in gobware, use that instead
-func createTokenPair(expires time.Time, data map[string]string, createTokenPair gobware.CreateTokenPair) (string, string, error) {
-	token, refreshToken, err := createTokenPair(expires, data)
-
-	return token, refreshToken, err
-}
-
 type server struct {
 	pb.UnimplementedGobwareServiceServer
 	ACL gobware.ACL
@@ -48,7 +34,7 @@ func(s *server) CreateToken(ctx context.Context, req *pb.CreateTokenRequest) (*p
 	fmt.Println("CreateToken - req.Data:", req.Data)
 
 	expires := time.Now().Add(gobware.TokenDuration)
-	token, err := createToken(expires, req.Data, gobware.NewToken)
+	token, err := gobware.NewToken(expires, req.Data)
 
 	if err != nil {
 		return nil, err
@@ -61,11 +47,11 @@ func(s *server) CreateToken(ctx context.Context, req *pb.CreateTokenRequest) (*p
 	return res, nil
 }
 
-func(s *server) CreateTokenPair(ctx context.Context, req *pb.CreateTokenPairRequest) (*pb.CreateTokenPairResponse, error) {
+func(s *server) CreateTokenPair(ctx context.Context, req *pb.CreateTokenRequest) (*pb.CreateTokenPairResponse, error) {
 	fmt.Println("CreateTokenPair - req.Data:", req.Data)
 
 	expires := time.Now().Add(gobware.TokenDuration)
-	token, refreshToken, err := createTokenPair(expires, req.Data, gobware.NewTokenPair)
+	token, refreshToken, err := gobware.NewTokenPair(expires, req.Data)
 
 	if err != nil {
 		return nil, err
@@ -79,23 +65,55 @@ func(s *server) CreateTokenPair(ctx context.Context, req *pb.CreateTokenPairRequ
 	return res, nil
 }
 
-func(s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*pb.CheckAccessResponse, error) {
+func(s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.CheckAccessTokenResponse, error) {
 	fmt.Println("CheckAccess - req.EncodedToken:", req.EncodedToken)
 	fmt.Println("CheckAccess - req.Data:", req.Data)
 
-	res := &pb.CheckAccessResponse {
+	res := &pb.CheckAccessTokenResponse {
 		Access: true,
 	}
 
 	return res, nil
 }
 
-func(s *server) CheckToken(ctx context.Context, req *pb.CheckTokenRequest) (*pb.CheckTokenResponse, error) {
+func(s *server) CheckAccessToken(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.CheckAccessTokenResponse, error) {
 	fmt.Println("CheckToken - req.EncodedToken:", req.EncodedToken)
 	fmt.Println("CheckToken - req.Data:", req.Data)
 
-	res := &pb.CheckTokenResponse {
+	var validated bool
+	validated, _, err = gobware.VerifyToken(req.EncodedToken)
+
+	res := &pb.CheckAccessTokenResponse {
 		Access: true,
+	}
+
+	return res, nil
+}
+
+func(s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshTokenRequest) (*pb.CheckRefreshTokenResponse, error) {
+	fmt.Println("CheckToken - req.EncodedAccessToken:", req.EncodedAccessToken)
+	fmt.Println("CheckToken - req.EncodedRefreshToken:", req.EncodedRefreshToken)
+	fmt.Println("CheckToken - req.Data:", req.Data)
+
+	accessToken := req.EncodedAccessToken
+	refreshToken := req.EncodedRefreshToken
+
+	var validated bool
+	validated, _, err := gobware.VerifyToken(accessToken)
+	if !validated || err != nil {
+		expires := time.Now().Add(gobware.TokenDuration)
+		// call other functions from token.go here to avoid calling function taking cookies as args
+		accessToken, refreshToken, err := gobware.AttemptTokenExchange(accessToken, refreshToken, expires)
+		if err == nil {
+			
+		}
+	} else {
+
+	}
+
+	res := &pb.CheckRefreshTokenResponse {
+		Access: true,
+		EncodedToken: "",
 	}
 
 	return res, nil
