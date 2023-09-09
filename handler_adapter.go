@@ -74,13 +74,12 @@ func CheckToken() HandlerFuncAdapter {
 				return
 			}
 
-			var validated bool
-			validated, _, err = VerifyToken(accessTokenCookie.Value)
+			validated, _, err := VerifyToken(accessTokenCookie.Value)
 			if !validated || err != nil {
 				refreshTokenCookie, err := r.Cookie(RefreshTokenKey)
 				if refreshTokenCookie != nil && err == nil {
 					expires := time.Now().Add(TokenDuration)
-					accessToken, refreshToken, err := AttemptTokenExchange(*accessTokenCookie, *refreshTokenCookie, expires)
+					accessToken, refreshToken, err := AttemptTokenExchange(accessTokenCookie.Value, refreshTokenCookie.Value, expires)
 					if err == nil {
 						http.SetCookie(w, BakeCookie(AccessTokenKey, accessToken, expires))
 						http.SetCookie(w, BakeCookie(RefreshTokenKey, refreshToken, expires))
@@ -113,14 +112,12 @@ func CheckAccess() HandlerFuncAdapter {
 				return
 			}	
 
-			var validated bool
-			var accessToken *Token
-			validated, accessToken, err = VerifyToken(accessTokenCookie.Value)
+			validated, accessToken, err := VerifyToken(accessTokenCookie.Value)
 			if !validated || err != nil {
 				refreshTokenCookie, err := r.Cookie(RefreshTokenKey)
 				if refreshTokenCookie != nil && err == nil {
 					expires := time.Now().Add(TokenDuration)
-					accessToken, refreshToken, err := AttemptTokenExchange(*accessTokenCookie, *refreshTokenCookie, expires)
+					accessToken, refreshToken, err := AttemptTokenExchange(accessTokenCookie.Value, refreshTokenCookie.Value, expires)
 					if err == nil {
 						http.SetCookie(w, BakeCookie(AccessTokenKey, accessToken, expires))
 						http.SetCookie(w, BakeCookie(RefreshTokenKey, refreshToken, expires))

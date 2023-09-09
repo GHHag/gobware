@@ -65,26 +65,37 @@ func(s *server) CreateTokenPair(ctx context.Context, req *pb.CreateTokenRequest)
 	return res, nil
 }
 
-func(s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.CheckAccessTokenResponse, error) {
-	fmt.Println("CheckAccess - req.EncodedToken:", req.EncodedToken)
-	fmt.Println("CheckAccess - req.Data:", req.Data)
+func(s *server) CheckAccessToken(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.CheckAccessTokenResponse, error) {
+	fmt.Println("CheckToken - req.EncodedToken:", req.EncodedToken)
+	fmt.Println("CheckToken - req.Data:", req.Data)
 
-	res := &pb.CheckAccessTokenResponse {
-		Access: true,
+	var res *pb.CheckAccessTokenResponse
+	validated, _, err := gobware.VerifyToken(req.EncodedToken)
+	if err != nil {
+		res = &pb.CheckAccessTokenResponse {
+			Access: false,
+		}
+	} else {
+		res = &pb.CheckAccessTokenResponse {
+			Access: validated,
+		}
 	}
 
 	return res, nil
 }
 
-func(s *server) CheckAccessToken(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.CheckAccessTokenResponse, error) {
-	fmt.Println("CheckToken - req.EncodedToken:", req.EncodedToken)
-	fmt.Println("CheckToken - req.Data:", req.Data)
+func(s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*pb.CheckAccessTokenResponse, error) {
+	fmt.Println("CheckAccess - req.EncodedToken:", req.EncodedToken)
+	fmt.Println("CheckAccess - req.Url:", req.Url)
+	fmt.Println("CheckAccess - req.HttpMethod:", req.HttpMethod)
+	fmt.Println("CheckAccess - req.Data:", req.Data)
 
-	var validated bool
-	validated, _, err = gobware.VerifyToken(req.EncodedToken)
-
-	res := &pb.CheckAccessTokenResponse {
-		Access: true,
+	var res *pb.CheckAccessTokenResponse
+	validated, accessToken, err := gobware.VerifyToken(req.EncodedToken)
+	if !validated || err != nil {
+		res.Access = false
+	} else {
+		res.Access = gobware.Config.AccessControlList.CheckAccess(accessToken.Data, req.Url, req.HttpMethod)
 	}
 
 	return res, nil
@@ -93,27 +104,23 @@ func(s *server) CheckAccessToken(ctx context.Context, req *pb.CheckAccessTokenRe
 func(s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshTokenRequest) (*pb.CheckRefreshTokenResponse, error) {
 	fmt.Println("CheckToken - req.EncodedAccessToken:", req.EncodedAccessToken)
 	fmt.Println("CheckToken - req.EncodedRefreshToken:", req.EncodedRefreshToken)
-	fmt.Println("CheckToken - req.Data:", req.Data)
+	// fmt.Println("CheckToken - req.Data:", req.Data)
 
 	accessToken := req.EncodedAccessToken
 	refreshToken := req.EncodedRefreshToken
 
-	var validated bool
+	var res *pb.CheckRefreshTokenResponse
 	validated, _, err := gobware.VerifyToken(accessToken)
 	if !validated || err != nil {
 		expires := time.Now().Add(gobware.TokenDuration)
-		// call other functions from token.go here to avoid calling function taking cookies as args
 		accessToken, refreshToken, err := gobware.AttemptTokenExchange(accessToken, refreshToken, expires)
 		if err == nil {
-			
+			res.EncodedAccessToken = accessToken
+			res.EncodedRefreshToken = refreshToken
 		}
 	} else {
-
-	}
-
-	res := &pb.CheckRefreshTokenResponse {
-		Access: true,
-		EncodedToken: "",
+		res.EncodedAccessToken = ""
+		res.EncodedRefreshToken = ""
 	}
 
 	return res, nil
@@ -144,3 +151,4 @@ func main() {
 		panic(err)
 	}
 }
+

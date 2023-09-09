@@ -8,9 +8,11 @@ service GobwareService {
 	rpc AddACLRule (AddACLRuleRequest) returns (AddACLRuleResponse);
 	rpc CreateToken (CreateTokenRequest) returns (CreateTokenResponse);
 	rpc CreateTokenPair (CreateTokenRequest) returns (CreateTokenPairResponse);
-	rpc CheckAccess (CheckAccessTokenRequest) returns (CheckAccessTokenResponse);
 	rpc CheckAccessToken (CheckAccessTokenRequest) returns (CheckAccessTokenResponse);
+	rpc CheckAccess (CheckAccessRequest) returns (CheckAccessTokenResponse);
 	rpc CheckRefreshToken (CheckRefreshTokenRequest) returns (CheckRefreshTokenResponse);
+	// Need a function to parse data of tokens?
+	// rpc ParseToken () return ();
 	//rpc Adapt () returns ();
 }
 
@@ -76,6 +78,13 @@ message CheckAccessTokenRequest {
  	map <string, string> data = 2;
 }
 
+message CheckAccessRequest {
+	string encodedToken = 1;
+	string url = 2;
+	string httpMethod = 3;
+	map <string, string> data = 4;
+}
+
 message CheckAccessTokenResponse {
 	bool access = 1;
 }
@@ -83,13 +92,12 @@ message CheckAccessTokenResponse {
 message CheckRefreshTokenRequest {
  	string encodedAccessToken = 1;
  	string encodedRefreshToken = 2;
- 	map <string, string> data = 3;
+ 	// map <string, string> data = 3;
 }
 
 message CheckRefreshTokenResponse {
-	bool access = 1;
-	string encodedAccessToken = 2;
-	string encodedRefreshToken = 3;
+	string encodedAccessToken = 1;
+	string encodedRefreshToken = 2;
 }
 
 // message Adapt {
