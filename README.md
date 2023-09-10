@@ -21,10 +21,10 @@ Import Gobware in your Go code: import "github.com/GHHag/gobware".
 
 Utilize the various tools and functionalities of Gobware in your web application to enhance security and streamline development.
 
-Contributing
+Contributing  
 We welcome contributions from the community to improve and expand Gobware. If you find any bugs, issues, or have feature requests, please feel free to open an issue or submit a pull request on our GitHub repository.
 
-License
+License  
 Gobware is released under the MIT License. You are free to use, modify, and distribute the package in compliance with the license terms.
 
 This README file is a high-level description of the Gobware package, outlining its key features and functionalities. The actual implementation can be found in the project's source code. The provided description serves as an introduction to the software package, encouraging users to explore and leverage its web development tools for secure and efficient web applications in Go.
