@@ -67,7 +67,6 @@ func(s *server) CreateTokenPair(ctx context.Context, req *pb.CreateTokenRequest)
 
 func(s *server) CheckAccessToken(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.CheckAccessTokenResponse, error) {
 	fmt.Println("CheckToken - req.EncodedToken:", req.EncodedToken)
-	fmt.Println("CheckToken - req.Data:", req.Data)
 
 	var res *pb.CheckAccessTokenResponse
 	validated, _, err := gobware.VerifyToken(req.EncodedToken)
@@ -88,14 +87,17 @@ func(s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*p
 	fmt.Println("CheckAccess - req.EncodedToken:", req.EncodedToken)
 	fmt.Println("CheckAccess - req.Url:", req.Url)
 	fmt.Println("CheckAccess - req.HttpMethod:", req.HttpMethod)
-	fmt.Println("CheckAccess - req.Data:", req.Data)
 
 	var res *pb.CheckAccessTokenResponse
 	validated, accessToken, err := gobware.VerifyToken(req.EncodedToken)
 	if !validated || err != nil {
-		res.Access = false
+		res = &pb.CheckAccessTokenResponse {
+			Access: false,
+		}
 	} else {
-		res.Access = gobware.Config.AccessControlList.CheckAccess(accessToken.Data, req.Url, req.HttpMethod)
+		res = &pb.CheckAccessTokenResponse{
+			Access: gobware.Config.AccessControlList.CheckAccess(accessToken.Data, req.Url, req.HttpMethod),
+		}
 	}
 
 	return res, nil
@@ -104,7 +106,6 @@ func(s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*p
 func(s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshTokenRequest) (*pb.CheckRefreshTokenResponse, error) {
 	fmt.Println("CheckToken - req.EncodedAccessToken:", req.EncodedAccessToken)
 	fmt.Println("CheckToken - req.EncodedRefreshToken:", req.EncodedRefreshToken)
-	// fmt.Println("CheckToken - req.Data:", req.Data)
 
 	accessToken := req.EncodedAccessToken
 	refreshToken := req.EncodedRefreshToken
@@ -114,13 +115,21 @@ func(s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshToken
 	if !validated || err != nil {
 		expires := time.Now().Add(gobware.TokenDuration)
 		accessToken, refreshToken, err := gobware.AttemptTokenExchange(accessToken, refreshToken, expires)
+		res = &pb.CheckRefreshTokenResponse{
+			EncodedAccessToken: accessToken,
+			EncodedRefreshToken: refreshToken,
+		}
 		if err == nil {
-			res.EncodedAccessToken = accessToken
-			res.EncodedRefreshToken = refreshToken
+			res.Successful = true
+		} else {
+			res.Successful = false
 		}
 	} else {
-		res.EncodedAccessToken = ""
-		res.EncodedRefreshToken = ""
+		res = &pb.CheckRefreshTokenResponse{
+			EncodedAccessToken: accessToken,
+			EncodedRefreshToken: refreshToken,
+			Successful: true,
+		}
 	}
 
 	return res, nil

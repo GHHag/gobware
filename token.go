@@ -232,10 +232,10 @@ func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken s
 	return accessToken, refreshToken, err
 }
 
-func AttemptTokenExchange(accessTokenCookie string, refreshTokenCookie string, expires time.Time) (string, string, error) {
-	validated, _, err := VerifyToken(refreshTokenCookie)
+func AttemptTokenExchange(accessToken string, refreshToken string, expires time.Time) (string, string, error) {
+	validated, _, err := VerifyToken(refreshToken)
 	if validated && err == nil {
-		accessToken, refreshToken, err := ExchangeTokens(accessTokenCookie, refreshTokenCookie, expires)
+		accessToken, refreshToken, err := ExchangeTokens(accessToken, refreshToken, expires)
 
 		return accessToken, refreshToken, err
 	} else {
