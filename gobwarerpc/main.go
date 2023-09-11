@@ -135,6 +135,27 @@ func(s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshToken
 	return res, nil
 }
 
+func(s *server) ParseTokenData(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.ParseTokenDataResponse, error) {
+	fmt.Println("CheckToken - req.EncodedToken:", req.EncodedToken)
+
+	accessToken := req.EncodedToken
+	var res *pb.ParseTokenDataResponse
+	validated, token, err := gobware.VerifyToken(accessToken)
+	if validated && err == nil {
+		res = &pb.ParseTokenDataResponse {
+			Data: token.Data,
+			Successful: true,
+		}
+	} else {
+		res = &pb.ParseTokenDataResponse {
+			Data: make(map[string]string),
+			Successful: false,
+		}
+	}
+
+	return res, nil
+}
+
 // func(s *server) Adapt(ctx context.Context) (error) {
 // 	return nil
 // }
