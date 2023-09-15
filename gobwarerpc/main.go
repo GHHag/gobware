@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"context"
-	// "log"
 	"net"
 	"time"
 	"google.golang.org/grpc"
@@ -90,22 +89,22 @@ func(s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*p
 
 	var res *pb.CheckAccessTokenResponse
 	validated, accessToken, err := gobware.VerifyToken(req.EncodedToken)
+	fmt.Println("validated:", validated)
+	res = &pb.CheckAccessTokenResponse {
+		Validated: validated,
+	}
 	if !validated || err != nil {
-		res = &pb.CheckAccessTokenResponse {
-			Access: false,
-		}
+		res.Access = false
 	} else {
-		res = &pb.CheckAccessTokenResponse{
-			Access: gobware.Config.AccessControlList.CheckAccess(accessToken.Data, req.Url, req.HttpMethod),
-		}
+		res.Access = gobware.Config.AccessControlList.CheckAccess(accessToken.Data, req.Url, req.HttpMethod)
 	}
 
 	return res, nil
 }
 
 func(s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshTokenRequest) (*pb.CheckRefreshTokenResponse, error) {
-	fmt.Println("CheckToken - req.EncodedAccessToken:", req.EncodedAccessToken)
-	fmt.Println("CheckToken - req.EncodedRefreshToken:", req.EncodedRefreshToken)
+	fmt.Println("CheckRefreshToken - req.EncodedAccessToken:", req.EncodedAccessToken)
+	fmt.Println("CheckRefreshToken - req.EncodedRefreshToken:", req.EncodedRefreshToken)
 
 	accessToken := req.EncodedAccessToken
 	refreshToken := req.EncodedRefreshToken
@@ -136,7 +135,7 @@ func(s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshToken
 }
 
 func(s *server) ParseTokenData(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.ParseTokenDataResponse, error) {
-	fmt.Println("CheckToken - req.EncodedToken:", req.EncodedToken)
+	fmt.Println("ParseTokenData - req.EncodedToken:", req.EncodedToken)
 
 	accessToken := req.EncodedToken
 	var res *pb.ParseTokenDataResponse

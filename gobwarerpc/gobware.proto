@@ -50,6 +50,7 @@ message CheckAccessRequest {
 
 message CheckAccessTokenResponse {
 	bool access = 1;
+	bool validated = 2;
 }
 
 message CheckRefreshTokenRequest {
