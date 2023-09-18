@@ -6,68 +6,69 @@ import gobware_pb2
 import gobware_pb2_grpc
 
 
+USER_ID_KEY = 'user-id'
 USER_ROLE = 'user'
 ROLE_KEY = 'user-role'
+ACCESS_TOKEN = 'access-token'
+REFRESH_TOKEN = 'refresh-token'
 
 app = Flask(__name__)
 
 channel = grpc.insecure_channel('localhost:5000')
 stub = gobware_pb2_grpc.GobwareServiceStub(channel)
 
-# Use gobware adapter functions as decorators on route functions
-# or functions being called in route functions.
+
+def create_token(f):
+    def create_token_wrapper(*args, **kwargs):
+        data = request.get_json()
+        if USER_ID_KEY not in data or ROLE_KEY not in data:
+            return '', 403
+
+        req = gobware_pb2.CreateTokenRequest(data=data)
+        res = stub.CreateToken(req)
+
+        response = make_response('Token requested')
+        response.set_cookie(ACCESS_TOKEN, res.encodedToken)
+
+        return response
+
+    return create_token_wrapper
 
 
-# Define functions that creates tokens and make it possible
-# to use them as decorators for endpoint functions that should
-# generate a token/tokens.
-#
-# def create_token(create_token_request):
-#   response = stub.CreateToken(create_token_request)
-#
-#   return response.encodedAccessToken
-#
-#
-# def create_token_pair(create_token_request):
-#   response = stub.CreateTokenPair(create_token_request)
-#
-#   return response.encodedAccessToken, response.encodedRefreshToken
+def create_token_pair(f):
+    def create_token_pair_wrapper(*args, **kwargs):
+        data = request.get_json()
+        if USER_ID_KEY not in data or ROLE_KEY not in data:
+            return '', 403
+
+        req = gobware_pb2.CreateTokenRequest(data=data)
+        res = stub.CreateTokenPair(req)
+
+        response = make_response('Token pair requested')
+        response.set_cookie(ACCESS_TOKEN, res.encodedAccessToken)
+        response.set_cookie(REFRESH_TOKEN, res.encodedRefreshToken)
+
+        return response
+
+    return create_token_pair_wrapper
+
 
 @app.route('/request-token', methods=['GET'])
+@create_token
 def request_token():
-    data = request.get_json()
-    if 'user-id' not in data or ROLE_KEY not in data:
-        return '', 403
-
-    req = gobware_pb2.CreateTokenRequest(data=data)
-    res = stub.CreateToken(req)
-
-    response = make_response('Token requested')
-    response.set_cookie('access-token', res.encodedToken)
-
-    return response
+    return ''
 
 
 @app.route('/request-token-pair', methods=['GET'])
+@create_token_pair
 def request_token_pair():
-    data = request.get_json()
-    if 'user-id' not in data or ROLE_KEY not in data:
-        return '', 403
-
-    req = gobware_pb2.CreateTokenRequest(data=data)
-    res = stub.CreateTokenPair(req)
-
-    response = make_response('Token pair requested')
-    response.set_cookie('access-token', res.encodedAccessToken)
-    response.set_cookie('refresh-token', res.encodedRefreshToken)
-
-    return response
+    return ''
 
 
 @app.route('/request-resource', methods=['GET'])
 def request_resource():
-    access_token = request.cookies.get('access-token')
-    refresh_token = request.cookies.get('refresh-token')
+    access_token = request.cookies.get(ACCESS_TOKEN)
+    refresh_token = request.cookies.get(REFRESH_TOKEN)
 
     req = gobware_pb2.CheckAccessRequest(
         encodedToken=access_token,
@@ -85,8 +86,8 @@ def request_resource():
             response = make_response(
                 {'message': 'Token pair requested', 'data': 'Resource'}
             )
-            response.set_cookie('access-token', res.encodedAccessToken)
-            response.set_cookie('refresh-token', res.encodedRefreshToken)
+            response.set_cookie(ACCESS_TOKEN, res.encodedAccessToken)
+            response.set_cookie(REFRESH_TOKEN, res.encodedRefreshToken)
             return response, 200
         else:
             return '', 403
@@ -98,8 +99,8 @@ def request_resource():
 
 @app.route('/request-another-resource', methods=['GET', 'POST', 'PUT'])
 def request_another_resource():
-    access_token = request.cookies.get('access-token')
-    refresh_token = request.cookies.get('refresh-token')
+    access_token = request.cookies.get(ACCESS_TOKEN)
+    refresh_token = request.cookies.get(REFRESH_TOKEN)
 
     req = gobware_pb2.CheckAccessRequest(
         encodedToken=access_token,
@@ -107,7 +108,9 @@ def request_another_resource():
         httpMethod=request.method
     )
     res = stub.CheckAccess(req)
-    if not res.validated:
+    if not res.access:
+        return '', 403
+    elif not res.validated and res.access:
         req = gobware_pb2.CheckRefreshTokenRequest(
             encodedAccessToken=access_token,
             encodedRefreshToken=refresh_token
@@ -117,20 +120,18 @@ def request_another_resource():
             response = make_response(
                 {'message': 'Token pair requested', 'data': 'Another resource'}
             )
-            response.set_cookie('access-token', res.encodedAccessToken)
-            response.set_cookie('refresh-token', res.encodedRefreshToken)
+            response.set_cookie(ACCESS_TOKEN, res.encodedAccessToken)
+            response.set_cookie(REFRESH_TOKEN, res.encodedRefreshToken)
             return response, 200
         else:
             return '', 403
-    elif res.validated and not res.access:
-        return '', 403
 
     return 'Another resource', 200
 
 
 @app.route('/parse-token-data', methods=['GET'])
 def parse_token_data():
-    access_token = request.cookies.get('access-token')
+    access_token = request.cookies.get(ACCESS_TOKEN)
 
     req = gobware_pb2.CheckAccessTokenRequest(encodedToken=access_token)
     res = stub.ParseTokenData(req)

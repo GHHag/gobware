@@ -90,13 +90,16 @@ func(s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*p
 	var res *pb.CheckAccessTokenResponse
 	validated, accessToken, err := gobware.VerifyToken(req.EncodedToken)
 	fmt.Println("validated:", validated)
-	res = &pb.CheckAccessTokenResponse {
-		Validated: validated,
-	}
-	if !validated || err != nil {
-		res.Access = false
+	if err != nil {
+		res = &pb.CheckAccessTokenResponse {
+			Validated: false,
+			Access: false,
+		}
 	} else {
-		res.Access = gobware.Config.AccessControlList.CheckAccess(accessToken.Data, req.Url, req.HttpMethod)
+		res = &pb.CheckAccessTokenResponse {
+			Validated: validated,
+			Access: gobware.Config.AccessControlList.CheckAccess(accessToken.Data, req.Url, req.HttpMethod),
+		}
 	}
 
 	return res, nil

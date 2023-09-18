@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package main;
+package gobware;
 
 option go_package = "./gobwarerpc";
 
