@@ -1,5 +1,14 @@
-# Example of an API implemented using Python and Flask with Gobware and gRPC
+## Example application using Python and Flask with Gobware and gRPC
 
+### Compiling Protocol Buffers and gRPC definitions
+```
+protoc --go_out=. --go-grpc_out=. gobware.proto
+```
+```
+python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. gobware.proto
+```
+
+### Python Flask API
 ```python
 from flask import Flask, request, jsonify, make_response
 import grpc
