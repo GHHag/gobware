@@ -9,9 +9,6 @@ Gobware includes robust web token security mechanisms. Tokens are used to secure
 2. Access Control Lists (ACL)  
 With built-in Access Control Lists, Gobware enables control over user access to various resources and actions within the web application. Administrators can define access rules based on roles and permissions, ensuring that each user has appropriate access privileges.
 
-3. Rate Limiting and Throttling  
-Gobware offers rate limiting and throttling capabilities to control the rate of incoming requests from clients. This helps prevent abuse and potential Denial-of-Service (DoS) attacks by restricting the number of requests per client within a specified time frame.
-
 ---
 
 **Cross-Language Compatibility via gRPC**  
@@ -47,6 +44,6 @@ Caching services
 
 Request rate limiting
 
-SSE/web socket functionality implementations
+SSE/web socket functionality
 
 Pub/Sub event management

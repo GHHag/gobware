@@ -1,6 +1,6 @@
 package gobware
 
-import(
+import (
 	"net/http"
 	"time"
 )
@@ -21,7 +21,7 @@ func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {
 }
 "
 
-Adapters should not set any http headers unless returning before 
+Adapters should not set any http headers unless returning before
 calling the HandlerFunc.
 
 */
@@ -89,7 +89,7 @@ func CheckToken() HandlerFuncAdapter {
 						w.WriteHeader(http.StatusForbidden)
 						return
 					}
-				} else{
+				} else {
 					w.WriteHeader(http.StatusForbidden)
 					return
 				}
@@ -110,7 +110,7 @@ func CheckAccess() HandlerFuncAdapter {
 			if err != nil {
 				w.WriteHeader(http.StatusForbidden)
 				return
-			}	
+			}
 
 			validated, accessToken, err := VerifyToken(accessTokenCookie.Value)
 			if !validated || err != nil {
@@ -127,7 +127,7 @@ func CheckAccess() HandlerFuncAdapter {
 						w.WriteHeader(http.StatusForbidden)
 						return
 					}
-				} else{
+				} else {
 					w.WriteHeader(http.StatusForbidden)
 					return
 				}

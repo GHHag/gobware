@@ -46,6 +46,6 @@ func HashData(algorithm Algorithm, data []byte, salt []byte, pepper []byte) []by
 }
 
 func VerifyData(algorithm Algorithm, data []byte, salt []byte, pepper []byte, hash []byte) bool {
-	hashedData  := HashData(algorithm, data, salt, pepper)
+	hashedData := HashData(algorithm, data, salt, pepper)
 	return hmac.Equal(hash, hashedData)
 }

@@ -1,14 +1,14 @@
 package gobware
 
 import (
-	"errors"
-	"encoding/base64"
-	"encoding/json"
 	"crypto/hmac"
 	"crypto/sha256"
-	"time"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
+	"time"
 )
 
 type CreateToken func(time.Time, map[string]string) (string, error)
@@ -17,12 +17,12 @@ type CreateTokenPair func(time.Time, map[string]string) (string, string, error)
 type RequestTokenPair func(*http.Request, time.Time, CreateTokenPair) (string, string, error)
 
 type Token struct {
-	Id string `json:"id"`
+	Id      string `json:"id"`
 	Expires time.Time
-	Data map[string]string `json:"data"`
+	Data    map[string]string `json:"data"`
 }
 
-func(token *Token) encode() ([]byte, error) {
+func (token *Token) encode() ([]byte, error) {
 	encodedToken, err := json.Marshal(token)
 	if err != nil {
 		return nil, err
@@ -31,21 +31,21 @@ func(token *Token) encode() ([]byte, error) {
 	return encodedToken, nil
 }
 
-func(token *Token) decode(encodedToken []byte) error {
+func (token *Token) decode(encodedToken []byte) error {
 	err := json.Unmarshal(encodedToken, token)
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
 type signedToken struct {
 	Signature []byte `json:"signature"`
-	Data []byte `json:"data"`
+	Data      []byte `json:"data"`
 }
 
-func(signedToken *signedToken) encode() (string, error) {
+func (signedToken *signedToken) encode() (string, error) {
 	encodedSignedToken, err := json.Marshal(signedToken)
 	if err != nil {
 		return "", nil
@@ -54,7 +54,7 @@ func(signedToken *signedToken) encode() (string, error) {
 	return base64.URLEncoding.EncodeToString(encodedSignedToken), nil
 }
 
-func(signedToken *signedToken) decode(encodedSignedToken string) error {
+func (signedToken *signedToken) decode(encodedSignedToken string) error {
 	decodedSignedToken, err := base64.URLEncoding.DecodeString(encodedSignedToken)
 	if err != nil {
 		return err
@@ -68,14 +68,14 @@ func(signedToken *signedToken) decode(encodedSignedToken string) error {
 	return nil
 }
 
-func(signedToken *signedToken) sign() {
-	mac := hmac.New(sha256.New, []byte(os.Getenv(secretKey) + os.Getenv(saltKey)))
+func (signedToken *signedToken) sign() {
+	mac := hmac.New(sha256.New, []byte(os.Getenv(secretKey)+os.Getenv(saltKey)))
 	mac.Write([]byte(signedToken.Data))
 	signedToken.Signature = []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
 }
 
-func(signedToken *signedToken) verify() bool {
-	mac := hmac.New(sha256.New, []byte(os.Getenv(secretKey) + os.Getenv(saltKey)))
+func (signedToken *signedToken) verify() bool {
+	mac := hmac.New(sha256.New, []byte(os.Getenv(secretKey)+os.Getenv(saltKey)))
 	mac.Write(signedToken.Data)
 
 	expected := []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
@@ -83,13 +83,13 @@ func(signedToken *signedToken) verify() bool {
 	return hmac.Equal(signedToken.Signature, expected)
 }
 
-func NewToken(expires time.Time, data map[string] string) (string, error) {
+func NewToken(expires time.Time, data map[string]string) (string, error) {
 	id, _ := GenerateId(256)
 
 	token := Token{
-		Id: base64.StdEncoding.EncodeToString(id),
+		Id:      base64.StdEncoding.EncodeToString(id),
 		Expires: expires,
-		Data: data,
+		Data:    data,
 	}
 
 	var err error
@@ -114,9 +114,9 @@ func NewTokenPair(expires time.Time, data map[string]string) (string, string, er
 	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(secretKey)), []byte(os.Getenv(pepperKey)))
 
 	token := Token{
-		Id: base64.StdEncoding.EncodeToString(id),
+		Id:      base64.StdEncoding.EncodeToString(id),
 		Expires: expires,
-		Data: data,
+		Data:    data,
 	}
 
 	var err error
@@ -143,7 +143,7 @@ func NewTokenPair(expires time.Time, data map[string]string) (string, string, er
 
 func newRefreshToken(id string, expires time.Time) (string, error) {
 	token := Token{
-		Id: id,
+		Id:      id,
 		Expires: expires.Add(TokenDuration * tokenDurationMultiplier),
 	}
 
@@ -221,7 +221,7 @@ func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken s
 	decodedRefreshTokenId, _ := base64.StdEncoding.DecodeString(decodedRefreshToken.Id)
 	tokenPairVerified := VerifyData(
 		sha256.Sum256, decodedAccessTokenId,
-		[]byte(os.Getenv(secretKey)), []byte(os.Getenv(pepperKey)), 
+		[]byte(os.Getenv(secretKey)), []byte(os.Getenv(pepperKey)),
 		decodedRefreshTokenId,
 	)
 	if !tokenPairVerified {
@@ -244,12 +244,12 @@ func AttemptTokenExchange(accessToken string, refreshToken string, expires time.
 }
 
 func BakeCookie(name string, value string, expires time.Time) *http.Cookie {
-	return &http.Cookie {
-		Name: name,
-		Value: value,
-		Expires: expires.Add(TokenDuration * tokenDurationMultiplier),
+	return &http.Cookie{
+		Name:     name,
+		Value:    value,
+		Expires:  expires.Add(TokenDuration * tokenDurationMultiplier),
 		HttpOnly: true,
-		Secure: true,
+		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	}
 }

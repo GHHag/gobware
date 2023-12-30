@@ -21,3 +21,8 @@
 go.work
 
 dev
+
+*.py
+*.js
+package.json
+package-lock.json

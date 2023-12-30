@@ -1,10 +1,10 @@
 package gobware
 
 import (
-	"encoding/base64"
-	"os"
 	"bufio"
+	"encoding/base64"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 )
@@ -14,7 +14,8 @@ const saltKey = "SALT"
 const pepperKey = "PEPPER"
 const AccessTokenKey = "access"
 const RefreshTokenKey = "refresh"
-//const TokenDuration = time.Hour
+
+// const TokenDuration = time.Hour
 const TokenDuration = time.Minute
 const tokenDurationMultiplier = 24
 
@@ -71,6 +72,6 @@ func init() {
 	}
 
 	if err := scanner.Err(); err != nil {
-        panic(err)
-    }
+		panic(err)
+	}
 }

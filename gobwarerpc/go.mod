@@ -3,6 +3,7 @@ module gobwarerpc
 go 1.21.0
 
 require (
+	github.com/GHHag/gobware v0.0.0-20230909210850-5358f72c62c6
 	google.golang.org/grpc v1.57.0
 	google.golang.org/protobuf v1.31.0
 )
