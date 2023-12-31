@@ -133,7 +133,8 @@ func CheckAccess() HandlerFuncAdapter {
 				}
 			}
 
-			access := Config.AccessControlList.CheckAccess(accessToken.Data, url, httpMethod)
+			ACL := GetACL()
+			access := ACL.CheckAccess(accessToken.Data, url, httpMethod)
 			if !access {
 				w.WriteHeader(http.StatusForbidden)
 				return

@@ -13,14 +13,13 @@ type route struct {
 	httpMethods map[string]bool
 }
 
-func NewACL(roleKey string) ACL {
-	return ACL{
+func NewACL(roleKey string) *ACL {
+	return &ACL{
 		roleKey: roleKey,
 		roles:   make(map[string]role),
 	}
 }
 
-// Change order of how ACL is composed to avoid redundant stuff?
 func (acl *ACL) AddACLRule(role string, route string, httpMethods []string) {
 	_, ok := acl.roles[role]
 	if !ok {

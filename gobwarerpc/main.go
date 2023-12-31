@@ -2,44 +2,45 @@ package main
 
 import (
 	"context"
+	pb "gobwarerpc/gobwarerpc"
 	"net"
 	"time"
-	"google.golang.org/grpc"
-	pb "gobwarerpc/gobwarerpc"
+
 	"github.com/GHHag/gobware"
+	"google.golang.org/grpc"
 )
 
 type server struct {
 	pb.UnimplementedGobwareServiceServer
-	ACL gobware.ACL
+	ACL *gobware.ACL
 }
 
-func(s *server) AddACLRule(ctx context.Context, req *pb.AddACLRuleRequest) (*pb.AddACLRuleResponse, error) {
+func (s *server) AddACLRule(ctx context.Context, req *pb.AddACLRuleRequest) (*pb.AddACLRuleResponse, error) {
 	s.ACL.AddACLRule(req.Role, req.Route, req.HttpMethods)
 
-	res := &pb.AddACLRuleResponse {
+	res := &pb.AddACLRuleResponse{
 		Successful: true,
 	}
 
 	return res, nil
 }
 
-func(s *server) CreateToken(ctx context.Context, req *pb.CreateTokenRequest) (*pb.CreateTokenResponse, error) {
+func (s *server) CreateToken(ctx context.Context, req *pb.CreateTokenRequest) (*pb.CreateTokenResponse, error) {
 	expires := time.Now().Add(gobware.TokenDuration)
 	token, err := gobware.NewToken(expires, req.Data)
 
 	if err != nil {
 		return nil, err
 	}
-	
-	res := &pb.CreateTokenResponse {
+
+	res := &pb.CreateTokenResponse{
 		EncodedToken: token,
 	}
 
 	return res, nil
 }
 
-func(s *server) CreateTokenPair(ctx context.Context, req *pb.CreateTokenRequest) (*pb.CreateTokenPairResponse, error) {
+func (s *server) CreateTokenPair(ctx context.Context, req *pb.CreateTokenRequest) (*pb.CreateTokenPairResponse, error) {
 	expires := time.Now().Add(gobware.TokenDuration)
 	token, refreshToken, err := gobware.NewTokenPair(expires, req.Data)
 
@@ -47,23 +48,23 @@ func(s *server) CreateTokenPair(ctx context.Context, req *pb.CreateTokenRequest)
 		return nil, err
 	}
 
-	res := &pb.CreateTokenPairResponse {
-		EncodedAccessToken: token,
+	res := &pb.CreateTokenPairResponse{
+		EncodedAccessToken:  token,
 		EncodedRefreshToken: refreshToken,
 	}
 
 	return res, nil
 }
 
-func(s *server) CheckAccessToken(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.CheckAccessTokenResponse, error) {
+func (s *server) CheckAccessToken(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.CheckAccessTokenResponse, error) {
 	var res *pb.CheckAccessTokenResponse
 	validated, _, err := gobware.VerifyToken(req.EncodedToken)
 	if err != nil {
-		res = &pb.CheckAccessTokenResponse {
+		res = &pb.CheckAccessTokenResponse{
 			Access: false,
 		}
 	} else {
-		res = &pb.CheckAccessTokenResponse {
+		res = &pb.CheckAccessTokenResponse{
 			Access: validated,
 		}
 	}
@@ -71,25 +72,27 @@ func(s *server) CheckAccessToken(ctx context.Context, req *pb.CheckAccessTokenRe
 	return res, nil
 }
 
-func(s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*pb.CheckAccessTokenResponse, error) {
+func (s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*pb.CheckAccessTokenResponse, error) {
 	var res *pb.CheckAccessTokenResponse
 	validated, accessToken, err := gobware.VerifyToken(req.EncodedToken)
 	if err != nil {
-		res = &pb.CheckAccessTokenResponse {
+		res = &pb.CheckAccessTokenResponse{
 			Validated: false,
-			Access: false,
+			Access:    false,
 		}
 	} else {
-		res = &pb.CheckAccessTokenResponse {
+		ACL := gobware.GetACL()
+		res = &pb.CheckAccessTokenResponse{
 			Validated: validated,
-			Access: gobware.Config.AccessControlList.CheckAccess(accessToken.Data, req.Url, req.HttpMethod),
+			// Access:    gobware.Config.AccessControlList.CheckAccess(accessToken.Data, req.Url, req.HttpMethod),
+			Access: ACL.CheckAccess(accessToken.Data, req.Url, req.HttpMethod),
 		}
 	}
 
 	return res, nil
 }
 
-func(s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshTokenRequest) (*pb.CheckRefreshTokenResponse, error) {
+func (s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshTokenRequest) (*pb.CheckRefreshTokenResponse, error) {
 	accessToken := req.EncodedAccessToken
 	refreshToken := req.EncodedRefreshToken
 
@@ -99,7 +102,7 @@ func(s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshToken
 		expires := time.Now().Add(gobware.TokenDuration)
 		accessToken, refreshToken, err := gobware.AttemptTokenExchange(accessToken, refreshToken, expires)
 		res = &pb.CheckRefreshTokenResponse{
-			EncodedAccessToken: accessToken,
+			EncodedAccessToken:  accessToken,
 			EncodedRefreshToken: refreshToken,
 		}
 		if err == nil {
@@ -109,27 +112,27 @@ func(s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshToken
 		}
 	} else {
 		res = &pb.CheckRefreshTokenResponse{
-			EncodedAccessToken: accessToken,
+			EncodedAccessToken:  accessToken,
 			EncodedRefreshToken: refreshToken,
-			Successful: true,
+			Successful:          true,
 		}
 	}
 
 	return res, nil
 }
 
-func(s *server) ParseTokenData(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.ParseTokenDataResponse, error) {
+func (s *server) ParseTokenData(ctx context.Context, req *pb.CheckAccessTokenRequest) (*pb.ParseTokenDataResponse, error) {
 	accessToken := req.EncodedToken
 	var res *pb.ParseTokenDataResponse
 	validated, token, err := gobware.VerifyToken(accessToken)
 	if validated && err == nil {
-		res = &pb.ParseTokenDataResponse {
-			Data: token.Data,
+		res = &pb.ParseTokenDataResponse{
+			Data:       token.Data,
 			Successful: true,
 		}
 	} else {
-		res = &pb.ParseTokenDataResponse {
-			Data: make(map[string]string),
+		res = &pb.ParseTokenDataResponse{
+			Data:       make(map[string]string),
 			Successful: false,
 		}
 	}
@@ -162,4 +165,3 @@ func main() {
 		panic(err)
 	}
 }
-

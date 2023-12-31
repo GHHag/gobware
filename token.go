@@ -16,13 +16,18 @@ type RequestToken func(*http.Request, time.Time, CreateToken) (string, error)
 type CreateTokenPair func(time.Time, map[string]string) (string, string, error)
 type RequestTokenPair func(*http.Request, time.Time, CreateTokenPair) (string, string, error)
 
-type Token struct {
+type token struct {
 	Id      string `json:"id"`
 	Expires time.Time
 	Data    map[string]string `json:"data"`
 }
 
-func (token *Token) encode() ([]byte, error) {
+type signedToken struct {
+	Signature []byte `json:"signature"`
+	Data      []byte `json:"data"`
+}
+
+func (token *token) encode() ([]byte, error) {
 	encodedToken, err := json.Marshal(token)
 	if err != nil {
 		return nil, err
@@ -31,18 +36,13 @@ func (token *Token) encode() ([]byte, error) {
 	return encodedToken, nil
 }
 
-func (token *Token) decode(encodedToken []byte) error {
+func (token *token) decode(encodedToken []byte) error {
 	err := json.Unmarshal(encodedToken, token)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-type signedToken struct {
-	Signature []byte `json:"signature"`
-	Data      []byte `json:"data"`
 }
 
 func (signedToken *signedToken) encode() (string, error) {
@@ -84,9 +84,9 @@ func (signedToken *signedToken) verify() bool {
 }
 
 func NewToken(expires time.Time, data map[string]string) (string, error) {
-	id, _ := GenerateId(256)
+	id, _ := GenerateId(32)
 
-	token := Token{
+	token := token{
 		Id:      base64.StdEncoding.EncodeToString(id),
 		Expires: expires,
 		Data:    data,
@@ -110,10 +110,10 @@ func NewToken(expires time.Time, data map[string]string) (string, error) {
 }
 
 func NewTokenPair(expires time.Time, data map[string]string) (string, string, error) {
-	id, _ := GenerateId(256)
+	id, _ := GenerateId(32)
 	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(secretKey)), []byte(os.Getenv(pepperKey)))
 
-	token := Token{
+	token := token{
 		Id:      base64.StdEncoding.EncodeToString(id),
 		Expires: expires,
 		Data:    data,
@@ -142,7 +142,7 @@ func NewTokenPair(expires time.Time, data map[string]string) (string, string, er
 }
 
 func newRefreshToken(id string, expires time.Time) (string, error) {
-	token := Token{
+	token := token{
 		Id:      id,
 		Expires: expires.Add(TokenDuration * tokenDurationMultiplier),
 	}
@@ -164,7 +164,7 @@ func newRefreshToken(id string, expires time.Time) (string, error) {
 	return encodedSignedToken, nil
 }
 
-func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
+func VerifyToken(encodedSignedToken string) (bool, *token, error) {
 	decodedSignedToken := signedToken{}
 
 	err := decodedSignedToken.decode(encodedSignedToken)
@@ -173,7 +173,7 @@ func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
 	}
 
 	verified := decodedSignedToken.verify()
-	var decodedToken Token
+	var decodedToken token
 	decodedToken.decode(decodedSignedToken.Data)
 
 	expired := decodedToken.Expires.Compare(time.Now()) < 0
@@ -181,19 +181,7 @@ func VerifyToken(encodedSignedToken string) (bool, *Token, error) {
 	return verified && !expired, &decodedToken, nil
 }
 
-/*func VerifyTokenId(encodedSignedToken string, id string) (bool, *Token, error) {
-	verified, token, err := VerifyToken(encodedSignedToken)
-
-	if !verified || err != nil {
-		return false, nil, err
-	}
-
-	// Id's should be signed and encrypted, and therefore needed
-	// to be encrypted and matched here before returning.
-	return verified && token.Id == id, token, err
-}*/
-
-func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken string, expires time.Time) (string, string, error) {
+func exchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken string, expires time.Time) (string, string, error) {
 	decodedSignedAccessToken := signedToken{}
 	decodedSignedRefreshToken := signedToken{}
 	aErr := decodedSignedAccessToken.decode(encodedSignedAccessToken)
@@ -204,8 +192,8 @@ func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken s
 
 	aVerified := decodedSignedAccessToken.verify()
 	rVerified := decodedSignedRefreshToken.verify()
-	var decodedAccessToken Token
-	var decodedRefreshToken Token
+	var decodedAccessToken token
+	var decodedRefreshToken token
 	decodedAccessToken.decode(decodedSignedAccessToken.Data)
 	decodedRefreshToken.decode(decodedSignedRefreshToken.Data)
 	if !aVerified || !rVerified {
@@ -235,7 +223,7 @@ func ExchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken s
 func AttemptTokenExchange(accessToken string, refreshToken string, expires time.Time) (string, string, error) {
 	validated, _, err := VerifyToken(refreshToken)
 	if validated && err == nil {
-		accessToken, refreshToken, err := ExchangeTokens(accessToken, refreshToken, expires)
+		accessToken, refreshToken, err := exchangeTokens(accessToken, refreshToken, expires)
 
 		return accessToken, refreshToken, err
 	} else {

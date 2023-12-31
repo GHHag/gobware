@@ -15,18 +15,21 @@ const pepperKey = "PEPPER"
 const AccessTokenKey = "access"
 const RefreshTokenKey = "refresh"
 
-// const TokenDuration = time.Hour
-const TokenDuration = time.Minute
+const TokenDuration = time.Hour
 const tokenDurationMultiplier = 24
 
-type Configuration struct {
-	AccessControlList ACL
+type configuration struct {
+	AccessControlList *ACL
 }
 
-var Config Configuration = Configuration{}
+var config configuration = configuration{}
 
-func SetACL(ACL ACL) {
-	Config.AccessControlList = ACL
+func SetACL(ACL *ACL) {
+	config.AccessControlList = ACL
+}
+
+func GetACL() *ACL {
+	return config.AccessControlList
 }
 
 func generateEnv() {
@@ -37,9 +40,18 @@ func generateEnv() {
 	defer file.Close()
 
 	writer := bufio.NewWriter(file)
-	secret, _ := GenerateSalt(256)
-	salt, _ := GenerateSalt(256)
-	pepper, _ := GenerateSalt(256)
+	secret, err := GenerateSalt(32)
+	if err != nil {
+		panic(err)
+	}
+	salt, err := GenerateSalt(32)
+	if err != nil {
+		panic(err)
+	}
+	pepper, err := GenerateSalt(32)
+	if err != nil {
+		panic(err)
+	}
 	writer.WriteString(fmt.Sprintf("%s=%s\n", secretKey, base64.StdEncoding.EncodeToString(secret)))
 	writer.WriteString(fmt.Sprintf("%s=%s\n", saltKey, base64.StdEncoding.EncodeToString(salt)))
 	writer.WriteString(fmt.Sprintf("%s=%s", pepperKey, base64.StdEncoding.EncodeToString(pepper)))
