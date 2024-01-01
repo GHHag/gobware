@@ -100,7 +100,7 @@ func CheckToken() HandlerFuncAdapter {
 	}
 }
 
-func CheckAccess() HandlerFuncAdapter {
+func CheckAccess(config Configuration) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			url := r.URL.Path
@@ -133,8 +133,7 @@ func CheckAccess() HandlerFuncAdapter {
 				}
 			}
 
-			ACL := GetACL()
-			access := ACL.CheckAccess(accessToken.Data, url, httpMethod)
+			access := config.GetACL().CheckAccess(accessToken.Data, url, httpMethod)
 			if !access {
 				w.WriteHeader(http.StatusForbidden)
 				return

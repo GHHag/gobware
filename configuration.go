@@ -18,18 +18,16 @@ const RefreshTokenKey = "refresh"
 const TokenDuration = time.Hour
 const tokenDurationMultiplier = 24
 
-type configuration struct {
-	AccessControlList *ACL
+type Configuration struct {
+	acl *acl
 }
 
-var config configuration = configuration{}
-
-func SetACL(ACL *ACL) {
-	config.AccessControlList = ACL
+func (config *Configuration) SetACL(acl *acl) {
+	config.acl = acl
 }
 
-func GetACL() *ACL {
-	return config.AccessControlList
+func (config *Configuration) GetACL() *acl {
+	return config.acl
 }
 
 func generateEnv() {
