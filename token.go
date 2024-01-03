@@ -164,12 +164,12 @@ func newRefreshToken(id string, expires time.Time) (string, error) {
 	return encodedSignedToken, nil
 }
 
-func VerifyToken(encodedSignedToken string) (bool, *token, error) {
+func VerifyToken(encodedSignedToken string) (bool, token, error) {
 	decodedSignedToken := signedToken{}
 
 	err := decodedSignedToken.decode(encodedSignedToken)
 	if err != nil {
-		return false, nil, err
+		return false, token{}, err
 	}
 
 	verified := decodedSignedToken.verify()
@@ -178,7 +178,7 @@ func VerifyToken(encodedSignedToken string) (bool, *token, error) {
 
 	expired := decodedToken.Expires.Compare(time.Now()) < 0
 
-	return verified && !expired, &decodedToken, nil
+	return verified && !expired, decodedToken, nil
 }
 
 func exchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken string, expires time.Time) (string, string, error) {
