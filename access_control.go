@@ -20,7 +20,7 @@ func NewACL(roleKey string) *acl {
 	}
 }
 
-func (acl *acl) AddACLRule(role string, route string, httpMethods []string) {
+func (acl *acl) addACLRule(role string, route string, httpMethods []string) {
 	_, ok := acl.roles[role]
 	if !ok {
 		acl.addACLRole(role)
@@ -68,6 +68,6 @@ func (acl *acl) AddCustomRule(function func(), data interface{}) {
 	// that implements some interface.
 }
 
-func (acl *acl) CheckAccess(userData map[string]string, route string, httpMethod string) bool {
+func (acl *acl) checkAccess(userData map[string]string, route string, httpMethod string) bool {
 	return acl.roles[userData[acl.roleKey]].routes[route].httpMethods[httpMethod]
 }

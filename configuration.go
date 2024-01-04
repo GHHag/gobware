@@ -26,8 +26,18 @@ func (config *Configuration) SetACL(acl *acl) {
 	config.acl = acl
 }
 
-func (config *Configuration) GetACL() *acl {
-	return config.acl
+func (config *Configuration) AddACLRule(role string, route string, httpMethods []string) {
+	if config.acl != nil {
+		config.acl.addACLRule(role, route, httpMethods)
+	}
+}
+
+func (config *Configuration) CheckAccess(userData map[string]string, route string, httpMethod string) bool {
+	if config.acl != nil {
+		return config.acl.checkAccess(userData, route, httpMethod)
+	} else {
+		return false
+	}
 }
 
 func generateEnv() {
