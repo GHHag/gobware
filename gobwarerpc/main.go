@@ -12,11 +12,11 @@ import (
 
 type server struct {
 	pb.UnimplementedGobwareServiceServer
-	ACL *gobware.ACL
+	configuration gobware.Configuration
 }
 
 func (s *server) AddACLRule(ctx context.Context, req *pb.AddACLRuleRequest) (*pb.AddACLRuleResponse, error) {
-	s.ACL.AddACLRule(req.Role, req.Route, req.HttpMethods)
+	s.configuration.AddACLRule(req.Role, req.Route, req.HttpMethods)
 
 	res := &pb.AddACLRuleResponse{
 		Successful: true,
@@ -81,11 +81,9 @@ func (s *server) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*
 			Access:    false,
 		}
 	} else {
-		ACL := gobware.GetACL()
 		res = &pb.CheckAccessTokenResponse{
 			Validated: validated,
-			// Access:    gobware.Config.AccessControlList.CheckAccess(accessToken.Data, req.Url, req.HttpMethod),
-			Access: ACL.CheckAccess(accessToken.Data, req.Url, req.HttpMethod),
+			Access:    s.configuration.CheckAccess(accessToken.Data, req.Url, req.HttpMethod),
 		}
 	}
 
@@ -152,11 +150,12 @@ func main() {
 
 	s := grpc.NewServer()
 
+	config := gobware.Configuration{}
 	ACL := gobware.NewACL("user-role")
-	gobware.SetACL(ACL)
+	config.SetACL(ACL)
 
 	app := &server{
-		ACL: ACL,
+		configuration: config,
 	}
 
 	pb.RegisterGobwareServiceServer(s, app)
