@@ -10,13 +10,16 @@ import (
 )
 
 const secretKey = "SECRET"
-const saltKey = "SALT"
-const pepperKey = "PEPPER"
 const AccessTokenKey = "access"
 const RefreshTokenKey = "refresh"
+const TokenDuration = time.Minute
+const tokenDurationMultiplier = 4
 
-const TokenDuration = time.Hour
-const tokenDurationMultiplier = 24
+var (
+	secret string
+	salt   string
+	pepper string
+)
 
 type Configuration struct {
 	acl *acl
@@ -40,7 +43,7 @@ func (config *Configuration) CheckAccess(userData map[string]string, route strin
 	}
 }
 
-func generateEnv() {
+func generateEnvVars() {
 	file, err := os.Create("./.gobenv")
 	if err != nil {
 		panic(err)
@@ -52,17 +55,7 @@ func generateEnv() {
 	if err != nil {
 		panic(err)
 	}
-	salt, err := GenerateSalt(32)
-	if err != nil {
-		panic(err)
-	}
-	pepper, err := GenerateSalt(32)
-	if err != nil {
-		panic(err)
-	}
 	writer.WriteString(fmt.Sprintf("%s=%s\n", secretKey, base64.StdEncoding.EncodeToString(secret)))
-	writer.WriteString(fmt.Sprintf("%s=%s\n", saltKey, base64.StdEncoding.EncodeToString(salt)))
-	writer.WriteString(fmt.Sprintf("%s=%s", pepperKey, base64.StdEncoding.EncodeToString(pepper)))
 
 	err = writer.Flush()
 	if err != nil {
@@ -73,8 +66,11 @@ func generateEnv() {
 func init() {
 	file, err := os.Open("./.gobenv")
 	if err != nil {
-		generateEnv()
+		generateEnvVars()
 		file, err = os.Open("./.gobenv")
+		if err != nil {
+			panic(err)
+		}
 	}
 	defer file.Close()
 
@@ -90,6 +86,20 @@ func init() {
 			}
 		}
 	}
+
+	secret = os.Getenv(secretKey)
+
+	saltValue, err := GenerateSalt(32)
+	if err != nil {
+		panic(err)
+	}
+	salt = base64.StdEncoding.EncodeToString(saltValue)
+
+	pepperValue, err := GenerateSalt(32)
+	if err != nil {
+		panic(err)
+	}
+	pepper = base64.StdEncoding.EncodeToString(pepperValue)
 
 	if err := scanner.Err(); err != nil {
 		panic(err)

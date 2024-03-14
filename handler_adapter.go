@@ -152,14 +152,6 @@ func CheckAccess(config Configuration) HandlerFuncAdapter {
 	}
 }
 
-func PublishEvent() HandlerFuncAdapter {
-	return func(hf http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			// Publish event to subscribers
-		}
-	}
-}
-
 func Adapt(hf http.HandlerFunc, adapters ...HandlerFuncAdapter) http.HandlerFunc {
 	for _, adapter := range adapters {
 		hf = adapter(hf)

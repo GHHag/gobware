@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -69,13 +68,13 @@ func (signedToken *signedToken) decode(encodedSignedToken string) error {
 }
 
 func (signedToken *signedToken) sign() {
-	mac := hmac.New(sha256.New, []byte(os.Getenv(secretKey)+os.Getenv(saltKey)))
+	mac := hmac.New(sha256.New, []byte(secret+salt))
 	mac.Write([]byte(signedToken.Data))
 	signedToken.Signature = []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
 }
 
 func (signedToken *signedToken) verify() bool {
-	mac := hmac.New(sha256.New, []byte(os.Getenv(secretKey)+os.Getenv(saltKey)))
+	mac := hmac.New(sha256.New, []byte(secret+salt))
 	mac.Write(signedToken.Data)
 
 	expected := []byte(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
@@ -111,7 +110,7 @@ func NewToken(expires time.Time, data map[string]string) (string, error) {
 
 func NewTokenPair(expires time.Time, data map[string]string) (string, string, error) {
 	id, _ := GenerateId(32)
-	idHash := HashData(sha256.Sum256, id, []byte(os.Getenv(secretKey)), []byte(os.Getenv(pepperKey)))
+	idHash := HashData(sha256.Sum256, id, []byte(secret), []byte(pepper))
 
 	token := token{
 		Id:      base64.StdEncoding.EncodeToString(id),
@@ -187,7 +186,7 @@ func exchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken s
 	aErr := decodedSignedAccessToken.decode(encodedSignedAccessToken)
 	rErr := decodedSignedRefreshToken.decode(encodedSignedRefreshToken)
 	if aErr != nil || rErr != nil {
-		return "", "", errors.New("Failed to decode tokens.")
+		return "", "", errors.New("failed to decode tokens")
 	}
 
 	aVerified := decodedSignedAccessToken.verify()
@@ -197,23 +196,23 @@ func exchangeTokens(encodedSignedAccessToken string, encodedSignedRefreshToken s
 	decodedAccessToken.decode(decodedSignedAccessToken.Data)
 	decodedRefreshToken.decode(decodedSignedRefreshToken.Data)
 	if !aVerified || !rVerified {
-		return "", "", errors.New("Failed to verify tokens.")
+		return "", "", errors.New("failed to verify tokens")
 	}
 
 	expired := decodedRefreshToken.Expires.Compare(time.Now()) < 0
 	if expired {
-		return "", "", errors.New("Token expired.")
+		return "", "", errors.New("token expired")
 	}
 
 	decodedAccessTokenId, _ := base64.StdEncoding.DecodeString(decodedAccessToken.Id)
 	decodedRefreshTokenId, _ := base64.StdEncoding.DecodeString(decodedRefreshToken.Id)
 	tokenPairVerified := VerifyData(
 		sha256.Sum256, decodedAccessTokenId,
-		[]byte(os.Getenv(secretKey)), []byte(os.Getenv(pepperKey)),
+		[]byte(secret), []byte(pepper),
 		decodedRefreshTokenId,
 	)
 	if !tokenPairVerified {
-		return "", "", errors.New("Failed to verify tokens.")
+		return "", "", errors.New("failed to verify tokens")
 	}
 
 	accessToken, refreshToken, err := NewTokenPair(expires, decodedAccessToken.Data)
