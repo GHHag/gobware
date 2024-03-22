@@ -31,7 +31,7 @@ type HandlerFuncAdapter func(http.HandlerFunc) http.HandlerFunc
 func GenerateToken(requestToken RequestToken) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			expires := time.Now().Add(TokenDuration)
+			expires := time.Now().Add(tokenDuration)
 
 			token, err := requestToken(r, expires, NewToken)
 			if err != nil {
@@ -39,7 +39,7 @@ func GenerateToken(requestToken RequestToken) HandlerFuncAdapter {
 				return
 			}
 
-			http.SetCookie(w, BakeCookie(AccessTokenKey, token, expires))
+			http.SetCookie(w, BakeCookie(accessTokenKey, token, expires))
 
 			hf(w, r)
 		}
@@ -49,7 +49,7 @@ func GenerateToken(requestToken RequestToken) HandlerFuncAdapter {
 func GenerateTokenPair(requestTokenPair RequestTokenPair) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			expires := time.Now().Add(TokenDuration)
+			expires := time.Now().Add(tokenDuration)
 
 			token, refreshToken, err := requestTokenPair(r, expires, NewTokenPair)
 			if err != nil {
@@ -57,8 +57,8 @@ func GenerateTokenPair(requestTokenPair RequestTokenPair) HandlerFuncAdapter {
 				return
 			}
 
-			http.SetCookie(w, BakeCookie(AccessTokenKey, token, expires))
-			http.SetCookie(w, BakeCookie(RefreshTokenKey, refreshToken, expires))
+			http.SetCookie(w, BakeCookie(accessTokenKey, token, expires))
+			http.SetCookie(w, BakeCookie(refreshTokenKey, refreshToken, expires))
 
 			hf(w, r)
 		}
@@ -68,33 +68,33 @@ func GenerateTokenPair(requestTokenPair RequestTokenPair) HandlerFuncAdapter {
 func CheckToken() HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			accessTokenCookie, err := r.Cookie(AccessTokenKey)
+			accessTokenCookie, err := r.Cookie(accessTokenKey)
 			if err != nil {
-				http.Error(w, "Access token not available", http.StatusForbidden)
+				http.Error(w, "Access token not available", http.StatusBadRequest)
 				return
 			}
 
 			validated, accessToken, err := VerifyToken(accessTokenCookie.Value)
 			if err != nil || accessToken.Data == nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
 			if !validated {
-				refreshTokenCookie, err := r.Cookie(RefreshTokenKey)
+				refreshTokenCookie, err := r.Cookie(refreshTokenKey)
 				if err != nil {
-					http.Error(w, "Refresh token not available", http.StatusForbidden)
+					http.Error(w, "Refresh token not available", http.StatusBadRequest)
 					return
 				}
-				expires := time.Now().Add(TokenDuration)
+				expires := time.Now().Add(tokenDuration)
 				refreshedAccessToken, refreshToken, err := AttemptTokenExchange(accessTokenCookie.Value, refreshTokenCookie.Value, expires)
 				if err == nil {
-					http.SetCookie(w, BakeCookie(AccessTokenKey, refreshedAccessToken, expires))
-					http.SetCookie(w, BakeCookie(RefreshTokenKey, refreshToken, expires))
+					http.SetCookie(w, BakeCookie(accessTokenKey, refreshedAccessToken, expires))
+					http.SetCookie(w, BakeCookie(refreshTokenKey, refreshToken, expires))
 				} else {
-					http.SetCookie(w, &http.Cookie{Name: AccessTokenKey, MaxAge: -1})
-					http.SetCookie(w, &http.Cookie{Name: RefreshTokenKey, MaxAge: -1})
-					w.WriteHeader(http.StatusForbidden)
+					http.SetCookie(w, &http.Cookie{Name: accessTokenKey, MaxAge: -1})
+					http.SetCookie(w, &http.Cookie{Name: refreshTokenKey, MaxAge: -1})
+					w.WriteHeader(http.StatusUnauthorized)
 					return
 				}
 			}
@@ -110,40 +110,40 @@ func CheckAccess(config Configuration) HandlerFuncAdapter {
 			url := r.URL.Path
 			httpMethod := r.Method
 
-			accessTokenCookie, err := r.Cookie(AccessTokenKey)
+			accessTokenCookie, err := r.Cookie(accessTokenKey)
 			if err != nil {
-				http.Error(w, "Access token not available", http.StatusForbidden)
+				http.Error(w, "Access token not available", http.StatusBadRequest)
 				return
 			}
 
 			validated, accessToken, err := VerifyToken(accessTokenCookie.Value)
 			if err != nil || accessToken.Data == nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
 			if !validated {
-				refreshTokenCookie, err := r.Cookie(RefreshTokenKey)
+				refreshTokenCookie, err := r.Cookie(refreshTokenKey)
 				if err != nil {
-					http.Error(w, "Refresh token not available", http.StatusForbidden)
+					http.Error(w, "Refresh token not available", http.StatusBadRequest)
 					return
 				}
-				expires := time.Now().Add(TokenDuration)
+				expires := time.Now().Add(tokenDuration)
 				refreshedAccessToken, refreshToken, err := AttemptTokenExchange(accessTokenCookie.Value, refreshTokenCookie.Value, expires)
 				if err == nil {
-					http.SetCookie(w, BakeCookie(AccessTokenKey, refreshedAccessToken, expires))
-					http.SetCookie(w, BakeCookie(RefreshTokenKey, refreshToken, expires))
+					http.SetCookie(w, BakeCookie(accessTokenKey, refreshedAccessToken, expires))
+					http.SetCookie(w, BakeCookie(refreshTokenKey, refreshToken, expires))
 				} else {
-					http.SetCookie(w, &http.Cookie{Name: AccessTokenKey, MaxAge: -1})
-					http.SetCookie(w, &http.Cookie{Name: RefreshTokenKey, MaxAge: -1})
-					w.WriteHeader(http.StatusForbidden)
+					http.SetCookie(w, &http.Cookie{Name: accessTokenKey, MaxAge: -1})
+					http.SetCookie(w, &http.Cookie{Name: refreshTokenKey, MaxAge: -1})
+					w.WriteHeader(http.StatusUnauthorized)
 					return
 				}
 			}
 
 			access := config.CheckAccess(accessToken.Data, url, httpMethod)
 			if !access {
-				w.WriteHeader(http.StatusForbidden)
+				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 

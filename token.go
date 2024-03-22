@@ -83,7 +83,7 @@ func (signedToken *signedToken) verify() bool {
 }
 
 func NewToken(expires time.Time, data map[string]string) (string, error) {
-	id, _ := GenerateId(32)
+	id, _ := GenerateRandomByteArray(32)
 
 	token := token{
 		Id:      base64.StdEncoding.EncodeToString(id),
@@ -109,7 +109,7 @@ func NewToken(expires time.Time, data map[string]string) (string, error) {
 }
 
 func NewTokenPair(expires time.Time, data map[string]string) (string, string, error) {
-	id, _ := GenerateId(32)
+	id, _ := GenerateRandomByteArray(32)
 	idHash := HashData(sha256.Sum256, id, []byte(secret), []byte(pepper))
 
 	token := token{
@@ -143,7 +143,7 @@ func NewTokenPair(expires time.Time, data map[string]string) (string, string, er
 func newRefreshToken(id string, expires time.Time) (string, error) {
 	token := token{
 		Id:      id,
-		Expires: expires.Add(TokenDuration * tokenDurationMultiplier),
+		Expires: expires.Add(tokenDuration * tokenDurationMultiplier),
 	}
 
 	var err error
@@ -234,7 +234,7 @@ func BakeCookie(name string, value string, expires time.Time) *http.Cookie {
 	return &http.Cookie{
 		Name:     name,
 		Value:    value,
-		Expires:  expires.Add(TokenDuration * tokenDurationMultiplier),
+		Expires:  expires.Add(tokenDuration * tokenDurationMultiplier),
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,

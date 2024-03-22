@@ -3,6 +3,7 @@ package gobware
 import (
 	"bufio"
 	"encoding/base64"
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -10,16 +11,28 @@ import (
 )
 
 const secretKey = "SECRET"
-const AccessTokenKey = "access"
-const RefreshTokenKey = "refresh"
-const TokenDuration = time.Minute
-const tokenDurationMultiplier = 4
 
 var (
-	secret string
-	salt   string
-	pepper string
+	secret                  string
+	salt                    string
+	pepper                  string
+	accessTokenKey          string
+	refreshTokenKey         string
+	tokenDuration           time.Duration
+	tokenDurationMultiplier time.Duration
 )
+
+func AccessTokenKey() string {
+	return accessTokenKey
+}
+
+func RefreshTokenKey() string {
+	return refreshTokenKey
+}
+
+func TokenDuration() time.Duration {
+	return tokenDuration
+}
 
 type Configuration struct {
 	acl *acl
@@ -51,7 +64,7 @@ func generateEnvVars() {
 	defer file.Close()
 
 	writer := bufio.NewWriter(file)
-	secret, err := GenerateSalt(32)
+	secret, err := GenerateRandomByteArray(32)
 	if err != nil {
 		panic(err)
 	}
@@ -64,6 +77,26 @@ func generateEnvVars() {
 }
 
 func init() {
+	accessTokenKeyPtr := flag.String("access-token-key", "access", "access token cookie key")
+	refreshTokenKeyPtr := flag.String("refresh-token-key", "refresh", "refresh token cookie key")
+	tokenDurationPtr := flag.String("token-duration", "hour", "access token duration, accepted values: minute, hour, day")
+	tokenDurationMultiplierPtr := flag.Int("token-duration-multiplier", 24, "access token duration multiplier, determines the duration of refresh tokens")
+	flag.Parse()
+
+	accessTokenKey = *accessTokenKeyPtr
+	refreshTokenKey = *refreshTokenKeyPtr
+	switch *tokenDurationPtr {
+	case "minute":
+		tokenDuration = time.Minute
+	case "hour":
+		tokenDuration = time.Hour
+	case "day":
+		tokenDuration = time.Hour * 24
+	default:
+		tokenDuration = time.Hour
+	}
+	tokenDurationMultiplier = time.Duration(*tokenDurationMultiplierPtr)
+
 	file, err := os.Open("./.gobenv")
 	if err != nil {
 		generateEnvVars()
@@ -89,13 +122,13 @@ func init() {
 
 	secret = os.Getenv(secretKey)
 
-	saltValue, err := GenerateSalt(32)
+	saltValue, err := GenerateRandomByteArray(32)
 	if err != nil {
 		panic(err)
 	}
 	salt = base64.StdEncoding.EncodeToString(saltValue)
 
-	pepperValue, err := GenerateSalt(32)
+	pepperValue, err := GenerateRandomByteArray(32)
 	if err != nil {
 		panic(err)
 	}

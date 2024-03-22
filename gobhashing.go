@@ -24,16 +24,10 @@ Verifying:
 
 type Algorithm func([]byte) [32]byte
 
-func GenerateSalt(length int) ([]byte, error) {
-	salt := make([]byte, length)
-	_, err := rand.Read(salt)
-	return salt, err
-}
-
-func GenerateId(length int) ([]byte, error) {
-	id := make([]byte, length)
-	_, err := rand.Read(id)
-	return id, err
+func GenerateRandomByteArray(length int) ([]byte, error) {
+	byteArray := make([]byte, length)
+	_, err := rand.Read(byteArray)
+	return byteArray, err
 }
 
 func HashData(algorithm Algorithm, data []byte, salt []byte, pepper []byte) []byte {
