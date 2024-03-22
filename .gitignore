@@ -26,3 +26,5 @@ dev
 *.js
 package.json
 package-lock.json
+
+.gobenv

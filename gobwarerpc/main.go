@@ -26,7 +26,7 @@ func (s *server) AddACLRule(ctx context.Context, req *pb.AddACLRuleRequest) (*pb
 }
 
 func (s *server) CreateToken(ctx context.Context, req *pb.CreateTokenRequest) (*pb.CreateTokenResponse, error) {
-	expires := time.Now().Add(gobware.TokenDuration)
+	expires := time.Now().Add(gobware.TokenDuration())
 	token, err := gobware.NewToken(expires, req.Data)
 
 	if err != nil {
@@ -41,7 +41,7 @@ func (s *server) CreateToken(ctx context.Context, req *pb.CreateTokenRequest) (*
 }
 
 func (s *server) CreateTokenPair(ctx context.Context, req *pb.CreateTokenRequest) (*pb.CreateTokenPairResponse, error) {
-	expires := time.Now().Add(gobware.TokenDuration)
+	expires := time.Now().Add(gobware.TokenDuration())
 	token, refreshToken, err := gobware.NewTokenPair(expires, req.Data)
 
 	if err != nil {
@@ -97,7 +97,7 @@ func (s *server) CheckRefreshToken(ctx context.Context, req *pb.CheckRefreshToke
 	var res *pb.CheckRefreshTokenResponse
 	validated, _, err := gobware.VerifyToken(accessToken)
 	if !validated || err != nil {
-		expires := time.Now().Add(gobware.TokenDuration)
+		expires := time.Now().Add(gobware.TokenDuration())
 		accessToken, refreshToken, err := gobware.AttemptTokenExchange(accessToken, refreshToken, expires)
 		res = &pb.CheckRefreshTokenResponse{
 			EncodedAccessToken:  accessToken,
