@@ -11,9 +11,15 @@ import (
 )
 
 type CreateToken func(time.Time, map[string]string) (string, error)
-type RequestToken func(*http.Request, time.Time, CreateToken) (string, error)
 type CreateTokenPair func(time.Time, map[string]string) (string, string, error)
-type RequestTokenPair func(*http.Request, time.Time, CreateTokenPair) (string, string, error)
+
+type TokenRequester interface {
+	RequestToken(*http.Request, time.Time, CreateToken) (string, error)
+}
+
+type TokenPairRequester interface {
+	RequestTokenPair(*http.Request, time.Time, CreateTokenPair) (string, string, error)
+}
 
 type token struct {
 	Id      string `json:"id"`

@@ -28,12 +28,12 @@ calling the HandlerFunc.
 
 type HandlerFuncAdapter func(http.HandlerFunc) http.HandlerFunc
 
-func GenerateToken(requestToken RequestToken) HandlerFuncAdapter {
+func GenerateToken(tokenRequester TokenRequester, adaptToken bool) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			expires := time.Now().Add(tokenDuration)
 
-			token, err := requestToken(r, expires, NewToken)
+			token, err := tokenRequester.RequestToken(r, expires, NewToken)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -41,17 +41,21 @@ func GenerateToken(requestToken RequestToken) HandlerFuncAdapter {
 
 			http.SetCookie(w, BakeCookie(accessTokenKey, token, expires))
 
+			if adaptToken == true {
+				r.AddCookie(BakeCookie(accessTokenKey, token, expires))
+			}
+
 			hf(w, r)
 		}
 	}
 }
 
-func GenerateTokenPair(requestTokenPair RequestTokenPair) HandlerFuncAdapter {
+func GenerateTokenPair(tokenPairRequester TokenPairRequester, adaptTokens bool) HandlerFuncAdapter {
 	return func(hf http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			expires := time.Now().Add(tokenDuration)
 
-			token, refreshToken, err := requestTokenPair(r, expires, NewTokenPair)
+			token, refreshToken, err := tokenPairRequester.RequestTokenPair(r, expires, NewTokenPair)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -59,6 +63,11 @@ func GenerateTokenPair(requestTokenPair RequestTokenPair) HandlerFuncAdapter {
 
 			http.SetCookie(w, BakeCookie(accessTokenKey, token, expires))
 			http.SetCookie(w, BakeCookie(refreshTokenKey, refreshToken, expires))
+
+			if adaptTokens == true {
+				r.AddCookie(BakeCookie(accessTokenKey, token, expires))
+				r.AddCookie(BakeCookie(refreshTokenKey, refreshToken, expires))
+			}
 
 			hf(w, r)
 		}

@@ -22,15 +22,15 @@ var (
 	tokenDurationMultiplier time.Duration
 )
 
-func AccessTokenKey() string {
+func GetAccessTokenKey() string {
 	return accessTokenKey
 }
 
-func RefreshTokenKey() string {
+func GetRefreshTokenKey() string {
 	return refreshTokenKey
 }
 
-func TokenDuration() time.Duration {
+func GetTokenDuration() time.Duration {
 	return tokenDuration
 }
 
