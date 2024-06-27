@@ -232,7 +232,7 @@ func AttemptTokenExchange(accessToken string, refreshToken string, expires time.
 
 		return accessToken, refreshToken, err
 	} else {
-		return "", "", err
+		return "", "", errors.New("failed to exchange tokens")
 	}
 }
 
