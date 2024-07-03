@@ -56,7 +56,7 @@ func (config *Configuration) CheckAccess(userData map[string]string, route strin
 	}
 }
 
-func generateEnvVars() {
+func generateSecret() {
 	file, err := os.Create("./.gobenv")
 	if err != nil {
 		panic(err)
@@ -99,7 +99,7 @@ func init() {
 
 	file, err := os.Open("./.gobenv")
 	if err != nil {
-		generateEnvVars()
+		generateSecret()
 		file, err = os.Open("./.gobenv")
 		if err != nil {
 			panic(err)

@@ -39,10 +39,12 @@ func GenerateToken(tokenRequester TokenRequester, adaptToken bool) HandlerFuncAd
 				return
 			}
 
-			http.SetCookie(w, BakeCookie(accessTokenKey, token, expires))
+			accessTokenCookie := tokenRequester.BakeCookie(accessTokenKey, token, expires)
+
+			http.SetCookie(w, accessTokenCookie)
 
 			if adaptToken {
-				r.AddCookie(BakeCookie(accessTokenKey, token, expires))
+				r.AddCookie(accessTokenCookie)
 			}
 
 			hf(w, r)
@@ -61,12 +63,15 @@ func GenerateTokenPair(tokenPairRequester TokenPairRequester, adaptTokens bool) 
 				return
 			}
 
-			http.SetCookie(w, BakeCookie(accessTokenKey, token, expires))
-			http.SetCookie(w, BakeCookie(refreshTokenKey, refreshToken, expires))
+			accessTokenCookie := tokenPairRequester.BakeCookie(accessTokenKey, token, expires)
+			refreshTokenCookie := tokenPairRequester.BakeCookie(refreshTokenKey, refreshToken, expires.Add(tokenDuration*tokenDurationMultiplier))
+
+			http.SetCookie(w, accessTokenCookie)
+			http.SetCookie(w, refreshTokenCookie)
 
 			if adaptTokens {
-				r.AddCookie(BakeCookie(accessTokenKey, token, expires))
-				r.AddCookie(BakeCookie(refreshTokenKey, refreshToken, expires))
+				r.AddCookie(accessTokenCookie)
+				r.AddCookie(refreshTokenCookie)
 			}
 
 			hf(w, r)

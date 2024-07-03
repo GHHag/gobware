@@ -15,10 +15,12 @@ type CreateTokenPair func(time.Time, map[string]string) (string, string, error)
 
 type TokenRequester interface {
 	RequestToken(*http.Request, time.Time, CreateToken) (string, error)
+	BakeCookie(string, string, time.Time) *http.Cookie
 }
 
 type TokenPairRequester interface {
 	RequestTokenPair(*http.Request, time.Time, CreateTokenPair) (string, string, error)
+	BakeCookie(string, string, time.Time) *http.Cookie
 }
 
 type token struct {
@@ -240,7 +242,8 @@ func BakeCookie(name string, value string, expires time.Time) *http.Cookie {
 	return &http.Cookie{
 		Name:     name,
 		Value:    value,
-		Expires:  expires.Add(tokenDuration * tokenDurationMultiplier),
+		Expires:  expires,
+		Path: "/",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
